@@ -1,3 +1,19 @@
 * Regions
 ** All regions are scoped
 Except for IAM and s3
+* IAM
+Identity and Access Management
+* SECURITY
+Never use root account ( except when first setting up )
+** Users
+Physical person
+** Groups
+Functions ( admins )
+** Roles
+For machines
+** Policies
+Govern permissions
+Define what each above groups can do
+** Leas privilege principle 
+Give minimal permissions to users they need to get job done
+
