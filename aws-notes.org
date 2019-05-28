@@ -21,6 +21,12 @@ Give minimal permissions to users they need to get job done
 chmod 0400 <key_name> (changes permissions to -r-----) (only owner can read)
 *** Security groups
 Act like firewall and block all Inboud / Outbound traffic that is not greenlit
+Can be attached to multiple instances ( vm's )
+Instance can have mutliple groups
+They work only within their region ( if you switch region, you have to recreate groups )
+They 'live' outside EC2 - they don't run on instances
+Defaults: all inbound is blocked and all outbound is allowed
+You can reference other security groups
 * EC2
 ** shh into machine
 ssh -i <key-file.pem> ec2-user@ip-address
