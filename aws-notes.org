@@ -5,15 +5,25 @@ Except for IAM and s3
 Identity and Access Management
 * SECURITY
 Never use root account ( except when first setting up )
-** Users
+*** Users
 Physical person
-** Groups
+*** Groups
 Functions ( admins )
-** Roles
+*** Roles
 For machines
-** Policies
+*** Policies
 Govern permissions
 Define what each above groups can do
-** Leas privilege principle 
+*** Leas privilege principle 
 Give minimal permissions to users they need to get job done
+*** Permissions
+**** 0644 <key_name> are too open
+chmod 0400 <key_name> (changes permissions to -r-----) (only owner can read)
+*** Security groups
+Act like firewall and block all Inboud / Outbound traffic that is not greenlit
+* EC2
+** shh into machine
+ssh -i <key-file.pem> ec2-user@ip-address
+** shh on windows
+use PUTTY to ssh into it
 
