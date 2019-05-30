@@ -34,6 +34,8 @@ They 'live' outside EC2 - they don't run on instances
 Defaults: all inbound is blocked and all outbound is allowed
 You can reference other security groups
 * EC2
+** User Data
+Used to run commands when the instance starts up
 ** shh into machine
 ssh -i <key-file.pem> ec2-user@ip-address
 ** shh on windows
