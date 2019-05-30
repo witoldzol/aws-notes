@@ -36,6 +36,11 @@ You can reference other security groups
 * EC2
 ** User Data
 Used to run commands when the instance starts up
+Commands run with 'sudo'
+Every bash script has to start with
+#+BEGIN_CENTER bash
+   #!/bin/bash
+#+END_CENTER
 ** shh into machine
 ssh -i <key-file.pem> ec2-user@ip-address
 ** shh on windows
