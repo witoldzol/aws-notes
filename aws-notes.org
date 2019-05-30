@@ -1,3 +1,9 @@
+
+* Linux commands
+** install
+yum install
+** switch to root
+sudo su
 * Regions
 ** All regions are scoped
 Except for IAM and s3
@@ -32,4 +38,10 @@ You can reference other security groups
 ssh -i <key-file.pem> ec2-user@ip-address
 ** shh on windows
 use PUTTY to ssh into it
-
+* Apache
+** install apache
+yum install httpd.x86_64
+(http daemon)
+** run & enable apache
+systemctl start httpd.service
+systemctl enable httpd.service
