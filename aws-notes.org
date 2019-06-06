@@ -4,6 +4,7 @@
 ** EC2
 *** how to ssh into ec2 
 *** how to change .pem permissions (chmod)
+gives a permission error exception if you can't access .pem
 *** how to use security groups
 *** differences between private/public/elastic IP
 *** how to use User Data at boot time
@@ -19,6 +20,7 @@ sudo su
 Except for IAM and s3
 * IAM
 Identity and Access Management
+It's global ( not locked to a zone / region )
 * SECURITY
 Never use root account ( except when first setting up )
 *** Users
@@ -42,7 +44,8 @@ Instance can have mutliple groups
 They work only within their region ( if you switch region, you have to recreate groups )
 They 'live' outside EC2 - they don't run on instances
 Defaults: all inbound is blocked and all outbound is allowed
-You can reference other security groups
+You can reference other security groups / CIDR blocks / IP addresses
+You CANNOT reference DNS names 
 * EC2
 ** Custom AMI
 Customers can spin up their own versions of OS
