@@ -50,6 +50,10 @@ Defaults: all inbound is blocked and all outbound is allowed
 You can reference other security groups / CIDR blocks / IP addresses
 You CANNOT reference DNS names 
 * EC2
+** Cannot see IP of customer going through load balancer
+Can only see private IP of ALB, in order to get IP of client
+check the header 'X-Forwarded-For'
+to check the port check 'X-Forwarded-Port'
 ** Custom AMI
 Customers can spin up their own versions of OS
 with custom setup/software/access etc
@@ -102,14 +106,21 @@ systemctl enable httpd.service
 
 
 * Load Balancers
+** Provide SSL certs & SSL termination (Classic and ALB)
+** Can route based on hostname / path
+** Great fit with ECS (Docker)
 ** Types
 v1 balancer ( classic )
 v2 application / network balancer
-** Health checks
+** Health checks ( available to all ALB )
 ELB can perform health check on instance
 Done on PORT & ROUTE ( /health )
 ** Application Load Balancer (v2)
+Layer 7 
 Can handle/serve multiple groups/apps
 Can implement 'stickiness' and direct same user to the same group ( ALB will generate cookie, not your application !)
 Supports HTTP/HTTPS & Websockets protocols
-APPLICATIONS dont see IP of clients directly!
+APPLICATIONS dont see IP of clients directly! ( Ip is placed in header 'X-Forwarded-For)
+** Network Load Balancer (v2)
+Layer 4
+Forwards TCP traffic
