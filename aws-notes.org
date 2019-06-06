@@ -106,6 +106,9 @@ systemctl enable httpd.service
 
 
 * Load Balancers
+** Can scale but need to 'warm up'
+** CLB/ALB/NLB has a static host name 
+Do not resolve and use underlying IP
 ** Provide SSL certs & SSL termination (Classic and ALB)
 ** Types
 v1 balancer ( classic )
@@ -124,3 +127,6 @@ APPLICATIONS dont see IP of clients directly! ( Ip is placed in header 'X-Forwar
 ** Network Load Balancer (v2)
 Layer 4
 Forwards TCP traffic
+** CLB/ALB cannot see client IP directly
+NLB can see IP directly
+Ip is stored in 'X-Forwarded-For' header (for alb/clb)
