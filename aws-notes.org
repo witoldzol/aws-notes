@@ -130,3 +130,9 @@ Forwards TCP traffic
 ** CLB/ALB cannot see client IP directly
 NLB can see IP directly
 Ip is stored in 'X-Forwarded-For' header (for alb/clb)
+** 4xx errors
+Client induced error
+** 5xx errors
+Application/Server side errors
+** If unable to connect to application..
+Check security groups!
