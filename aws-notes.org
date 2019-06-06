@@ -18,6 +18,9 @@ sudo su
 * Regions
 ** All regions are scoped
 Except for IAM and s3
+* AMI
+Amazon Machine Image
+They are region locked, cannot be seen from outside a region
 * IAM
 Identity and Access Management
 It's global ( not locked to a zone / region )
@@ -97,3 +100,11 @@ systemctl enable httpd.service
 
 
 
+
+* Load Balancers
+** Types
+v1 balancer ( classic )
+v2 application / network balancer
+** Health checks
+ELB can perform health check on instance
+Done on PORT & ROUTE ( /health )
