@@ -108,3 +108,8 @@ v2 application / network balancer
 ** Health checks
 ELB can perform health check on instance
 Done on PORT & ROUTE ( /health )
+** Application Load Balancer (v2)
+Can handle/serve multiple groups/apps
+Can implement 'stickiness' and direct same user to the same group ( ALB will generate cookie, not your application !)
+Supports HTTP/HTTPS & Websockets protocols
+APPLICATIONS dont see IP of clients directly!
