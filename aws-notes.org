@@ -101,10 +101,6 @@ yum install httpd.x86_64
 ** run & enable apache
 systemctl start httpd.service
 systemctl enable httpd.service
-
-
-
-
 * Load Balancers
 ** Can scale but need to 'warm up'
 ** CLB/ALB/NLB has a static host name 
@@ -136,3 +132,40 @@ Client induced error
 Application/Server side errors
 ** If unable to connect to application..
 Check security groups!
+* ASG
+Free!
+Auto Scaling Groups
+Can scale based on CloudWatch alarms
+Its possible to set up custom metrics for CloudWatch
+ASG use launch configurations 
+IAM roles attached to ASG are PASSED on to EC2 instances 
+** Metrics
+CPU
+Network
+Custom
+On schedule!
+* EBS Volume
+Network drives
+Only one EBS can be attached/detached to EC2's
+Locked to Availability Zone eg: us-east-1a != us-east-1b
+You can move SNAPSHOTS of it
+EBS backups use IO so don't perform them when application is busy
+Root EBS gets terminated with the instance ( can be turned off )
+Get charged by provisioned size, not used one
+You can resize volumes
+** EBS encryption !important
+Data at rest is encrypted inside the volume
+Data moving between instance & volume is encrypted
+Snapshots created from this volume are encrypted
+** Snapshots
+Snapshots take actual size not the whole provision of EBS 
+Used for backups
+When you want to resize a volume down
+Change volume type
+Encrypt volume
+** Instance stores
+Physically attached to the machine
+Better I/O performance
+On termination of instance, data is lost
+Cant resize
+Backups must be operated by user
