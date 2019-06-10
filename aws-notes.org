@@ -201,4 +201,22 @@ Increases availability
 Failover in case of disaster ( replication is SYNC )
 No manual intervention
 Not used for scaling (standby doesn't have read writes)
-
+** Backups
+Automatically enabled
+Daily snapshot
+Transaction logs saved for 7 days (35max)
+DB snapshots can be user triggered ( retained for as long as you want)
+** Security
+RDS DB's are deployed within private subnet ( not a public one )
+Uses security groups ( to control who can COMMUNICATE with RDS )
+Uses IAM policies to control who can MANAGE
+Encription at REST with AWS KMS - AES-256 encription
+You can use SSL certs to encrypt data to RDS in FLIGHT
+*** Enforce SLL ! ( important )
+**** PostgreSQL
+rds.force_ssl=1 (in the AWS RDS Console - Parameter Groups)
+**** MySQL
+GRANT USAGE ON *.* TO 'mysqluser'@'%' REQUIRE SLL;
+*** Connect using SLL
+Provide SLL Trust cert ( can be downloaded from AWS )
+Provide SLL options when connection to DB
