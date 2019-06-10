@@ -207,7 +207,6 @@ Daily snapshot
 Transaction logs saved for 7 days (35max)
 DB snapshots can be user triggered ( retained for as long as you want)
 ** Security
-
 *** Access
 RDS DB's are deployed within private subnet ( not a public one )
 Uses security groups ( to control who can COMMUNICATE with RDS )
@@ -232,3 +231,4 @@ Can have up to 15 replicas
 Replication is faster
 Failover is instantaneous
 HA native ( high availability native )
+More expensive but also more efficient
