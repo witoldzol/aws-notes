@@ -169,3 +169,36 @@ Better I/O performance
 On termination of instance, data is lost
 Cant resize
 Backups must be operated by user
+* Route 53
+Use Alias over CNAME
+Managed DNS ( collection of records )
+DNS records get cached by browsers ( saved locally )
+** Records:
+*** A: 
+url to ipv4
+*** AAAA:
+url to ipv6
+*** CNAME
+url to url
+*** Alias
+url to AWS resource
+** Features:
+Load balancing
+Health checks
+Routing policy ( geolocation, proximity, latency, weighted, simple)
+* RDS
+Relational Database Services
+** Replicas
+Used for READ scaling !
+DB can have up to 5 replicas within & across AZ or regions
+Replication is ASYNC !
+Replicas can be promoted to their own DB
+Applications must update the connection string to leverage read replicas
+Master has 'write/read', replicas only 'reads'
+** Disaster recovery
+One DNS can be set to 'standby' 
+Increases availability
+Failover in case of disaster ( replication is SYNC )
+No manual intervention
+Not used for scaling (standby doesn't have read writes)
+
