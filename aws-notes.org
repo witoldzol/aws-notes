@@ -207,9 +207,13 @@ Daily snapshot
 Transaction logs saved for 7 days (35max)
 DB snapshots can be user triggered ( retained for as long as you want)
 ** Security
+
+*** Access
 RDS DB's are deployed within private subnet ( not a public one )
 Uses security groups ( to control who can COMMUNICATE with RDS )
 Uses IAM policies to control who can MANAGE
+Username / password for LOGIN to DB ( IAM users can be used - Postgre / Aurora)
+*** Encription
 Encription at REST with AWS KMS - AES-256 encription
 You can use SSL certs to encrypt data to RDS in FLIGHT
 *** Enforce SLL ! ( important )
@@ -220,3 +224,11 @@ GRANT USAGE ON *.* TO 'mysqluser'@'%' REQUIRE SLL;
 *** Connect using SLL
 Provide SLL Trust cert ( can be downloaded from AWS )
 Provide SLL options when connection to DB
+*** Aurora
+Compatibile with postre & mysql
+'Cloud optimized'
+Automatically grows in increments of 10GB up to 64TB
+Can have up to 15 replicas
+Replication is faster
+Failover is instantaneous
+HA native ( high availability native )
