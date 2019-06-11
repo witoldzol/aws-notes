@@ -251,3 +251,19 @@ Public authentication layers
 ** Private subnets 
 Web app servers
 Databases
+* S3
+Simple Storage Service
+No directories ( just keys )
+** Buckets
+Defined @ regional level BUT must have UNIQUE name GLOBALLY !
+*** Naming convention:
+- No uppercase
+- No underscore
+- 3 to 63 chars
+- not an IP
+- starts with letter or number
+** Objects
+They have a key
+*** Key
+Its a FULL path to an Object(file)
+<my_bucket>/my_file.txt
