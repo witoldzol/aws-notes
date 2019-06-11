@@ -189,13 +189,14 @@ Routing policy ( geolocation, proximity, latency, weighted, simple)
 * RDS
 Relational Database Services
 ** Replicas
+Applications MUST update the connection string to leverage read replicas!!
 Used for READ scaling !
 DB can have up to 5 replicas within & across AZ or regions
 Replication is ASYNC !
 Replicas can be promoted to their own DB
-Applications must update the connection string to leverage read replicas
 Master has 'write/read', replicas only 'reads'
 ** Disaster recovery
+No need to UPDATE connection string ( so the failover is seemless )
 One DNS can be set to 'standby' 
 Increases availability
 Failover in case of disaster ( replication is SYNC )
