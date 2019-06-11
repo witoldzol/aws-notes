@@ -133,8 +133,8 @@ Application/Server side errors
 ** If unable to connect to application..
 Check security groups!
 * ASG
-Free!
 Auto Scaling Groups
+Free!
 Can scale based on CloudWatch alarms
 Its possible to set up custom metrics for CloudWatch
 ASG use launch configurations 
