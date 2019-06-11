@@ -232,3 +232,11 @@ Replication is faster
 Failover is instantaneous
 HA native ( high availability native )
 More expensive but also more efficient
+* ElastiCache
+In memory version of RDS ( Redis / Memcached )
+Has Read & Write scaling ( Replicas / Sharding )
+Multi AZ with failover
+Can be encrypted at rest & in-transit
+* VPC
+Virtual Private Cloud
+Each VPC contains subnets ( networks )
