@@ -283,14 +283,29 @@ Deleting versined file doesn't remove it, just puts 'delete marker' on it
 4 Methods:
 *** SSE-S3
 Keys managed by AWS S3
+Key name: "S3 Managed Data Key"
 Objects encrypted server side
 Encryption: AES-256
 When sending data to S3: set header: "x-amz-server-side-encryption":"AES256"
 *** SSE-KMS
 Keys managed by Key Management Service
+Key is called: "Customer Master Key" ( CMK )
 KMS gives you more control over keys and audit trail
 Server side encryption
 When sending data to S3: set header: "x-amz-server-side-encryption":"aws:kms"
 *** SSE-C
-Keys managed by YOU
+Keys managed by YOU outside of AWS ( not stored by amazon)
+HTTPS must be used
+How to:
+Generate client side data key
+Using Https send DATA key in header
+Amazon encrypts object using key, and then discards the key
 *** Client Side Encryption
+Use client library such as Amazon S3 Encryption Client
+Client must encrypt when sending & receiving to S3
+Client fully manages keys & encryptin cycle
+How to:
+Generate data key
+Encrypt object using key ( on client side )
+Send encrypted object to S3 ( http/s )
+
