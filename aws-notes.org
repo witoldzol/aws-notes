@@ -309,6 +309,14 @@ Generate data key
 Encrypt object using key ( on client side )
 Send encrypted object to S3 ( http/s )
 *** Encryption in transit
+Also called SSL / TLS
 HTTP endpoint: not encrypted
 HTTPS endpoint: encryption in flight ( mandatory for SSE-C )
+** Security
+*** User based
+IAM policies - which API calls should be allowed for a specific user 
+*** Resource based (more popular)
+Bucket policies - bucket wide policy from S3 console ( allows cross account )
+*** Object Access Control List (ACL) !ignore
+*** Bucket Access Control List !ignore
 
