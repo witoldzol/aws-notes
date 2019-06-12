@@ -317,6 +317,17 @@ HTTPS endpoint: encryption in flight ( mandatory for SSE-C )
 IAM policies - which API calls should be allowed for a specific user 
 *** Resource based (more popular)
 Bucket policies - bucket wide policy from S3 console ( allows cross account )
+Use S3 policy to:
+- Grant public access to bucket
+- Force object to be encrypted on upload
+- Grant access to another account ( Cross Account )
+JSON based policies:
+**** Resources: buckets and objects
+**** Actions: Set of API to Allow or Deny
+**** Effect: Allow / Deny
+**** Principal: the account/user to apply policy to
+
+
 *** Object Access Control List (ACL) !ignore
 *** Bucket Access Control List !ignore
 
