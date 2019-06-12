@@ -267,3 +267,30 @@ They have a key
 *** Key
 Its a FULL path to an Object(file)
 <my_bucket>/my_file.txt
+*** Values 
+Content of the body of object
+Max size is 5TB
+If file > 5GB must use 'multi-part upload' !important
+*** Metadata
+List of text key / value pairs ( sys or user metadata )
+*** Tags 
+Useful for security / lifecycle
+** Versioning
+Enabled at bucket level
+File before we turn on versioning will have version 'null' !important
+Deleting versined file doesn't remove it, just puts 'delete marker' on it
+** Encryption !important
+4 Methods:
+*** SSE-S3
+Keys managed by AWS S3
+Objects encrypted server side
+Encryption: AES-256
+When sending data to S3: set header: "x-amz-server-side-encryption":"AES256"
+*** SSE-KMS
+Keys managed by Key Management Service
+KMS gives you more control over keys and audit trail
+Server side encryption
+When sending data to S3: set header: "x-amz-server-side-encryption":"aws:kms"
+*** SSE-C
+Keys managed by YOU
+*** Client Side Encryption
