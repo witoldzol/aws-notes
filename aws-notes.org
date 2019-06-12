@@ -330,4 +330,12 @@ JSON based policies:
 
 *** Object Access Control List (ACL) !ignore
 *** Bucket Access Control List !ignore
+** Networking
+S3 supports VPC Endpoints ( for instances in VPC without www internet )
+** Logging and Audit
+S3 access logs can be stored in other S3 bucket ( not the same - or you will have endless loop)
+API calls can be logged in AWS CloudTrail
+** User Security
+MFA ( multi factor authentication ) can be enabled for file deletetion
+Signed URLs: valid only for a limited time 
 
