@@ -308,4 +308,7 @@ How to:
 Generate data key
 Encrypt object using key ( on client side )
 Send encrypted object to S3 ( http/s )
+*** Encryption in transit
+HTTP endpoint: not encrypted
+HTTPS endpoint: encryption in flight ( mandatory for SSE-C )
 
