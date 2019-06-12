@@ -338,4 +338,7 @@ API calls can be logged in AWS CloudTrail
 ** User Security
 MFA ( multi factor authentication ) can be enabled for file deletetion
 Signed URLs: valid only for a limited time 
-
+** S3 Websites
+<bucket-name>.s3-website-<AWS-region>.amazonaws.com
+<bucket-name>.s3-website.<AWS-region>.amazonaws.com
+403 error --- > check bucket policy, does it allows public reads?!
