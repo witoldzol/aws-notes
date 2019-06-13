@@ -1,5 +1,5 @@
 
-
+;; Fundamentals
 * Need to know
 ** EC2
 *** how to ssh into ec2 
@@ -379,4 +379,5 @@ It uses edge locations
 *** SSE-KMS Encryption can lower performance
 You may have AWS limit for KMS usage ( 100s - 1000s download/upload per second)
 
-
+;;CLI
+* 
