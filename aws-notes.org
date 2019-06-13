@@ -342,3 +342,41 @@ Signed URLs: valid only for a limited time
 <bucket-name>.s3-website-<AWS-region>.amazonaws.com
 <bucket-name>.s3-website.<AWS-region>.amazonaws.com
 403 error --- > check bucket policy, does it allows public reads?!
+** CORS
+In order to share files from different bucket, that bucket needs to have a CORS enabled
+and configured correctly
+** Consistency Model
+EVENTUAL CONSISTENCY !important
+shit takes a while to update
+
+for example, you try GET on resource and get 404 response
+404 gets cached
+you PUT the resource and try GET again
+you will get 404 AGAIN because, 404 from first try was cached
+it will take some time before resource will be available
+
+Another example:
+DELETE 200 -> GET 200
+After deleting a resource, you might still be able to GET it for a short while
+EVENTUAL CONSISTENCY RULE 
+** Performance
+*** If you have > 100 TPS performance might degrade
+For best performance you want your objects distributed between different partitions
+PUT 4 RANDOM CHARS in front of your KEY NAME to optimise performance !important
+
+<my_bucket>/6ad7_myfolder/my_file1.txt
+<my_bucket>/a37f_myfolder/my_file2.txt
+
+(you don't have to do this anymore, but exam wasn't updated)
+
+*** For files > 5GB use MULTIPART UPLOAD
+
+*** If you want to do A LOT of reads, use CLOUDFRONT (caches S3 objects)
+
+*** If you want to UPLOAD a lot, use S3 Transfer Acceleration
+It uses edge locations
+
+*** SSE-KMS Encryption can lower performance
+You may have AWS limit for KMS usage ( 100s - 1000s download/upload per second)
+
+
