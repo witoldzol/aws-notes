@@ -359,7 +359,7 @@ Another example:
 DELETE 200 -> GET 200
 After deleting a resource, you might still be able to GET it for a short while
 EVENTUAL CONSISTENCY RULE 
-** Performance
+** Performance !important
 *** If you have > 100 TPS performance might degrade
 For best performance you want your objects distributed between different partitions
 PUT 4 RANDOM CHARS in front of your KEY NAME to optimise performance !important
