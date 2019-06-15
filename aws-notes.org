@@ -382,5 +382,10 @@ You may have AWS limit for KMS usage ( 100s - 1000s download/upload per second)
 
  
 * CLI
+//list buckets
 aws s3 ls s3://bucketofwitold
+//copy from bucket to bucket
+aws s3 cp s3://bucketofwitold/dog.jpg s3://mysecondbucketwitold
+//make bucket 
+aws s3 mb s3://bucket-name-unique
 
