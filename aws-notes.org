@@ -50,6 +50,7 @@ Defaults: all inbound is blocked and all outbound is allowed
 You can reference other security groups / CIDR blocks / IP addresses
 You CANNOT reference DNS names 
 * EC2
+Elastic compute cloud
 ** Cannot see IP of customer going through load balancer
 Can only see private IP of ALB, in order to get IP of client
 check the header 'X-Forwarded-For'
@@ -382,10 +383,22 @@ You may have AWS limit for KMS usage ( 100s - 1000s download/upload per second)
 
  
 * CLI
+//configure cli
+aws configure  //afterwards put in both your keys in
 //list buckets
 aws s3 ls s3://bucketofwitold
 //copy from bucket to bucket
 aws s3 cp s3://bucketofwitold/dog.jpg s3://mysecondbucketwitold
 //make bucket 
 aws s3 mb s3://bucket-name-unique
+//remove bucket
+aws s3 rb s3://bucket-name-unique
 
+** EC2
+NEVER PUT YOUR CREDENTIALS on EC2!!!
+Use IAM Roles to give credentials to EC2
+EC2 can have only 1 ROLE at a time
+You can have as many roles as you want...just one can be used per given instance!
+Each role can have multiple permissions
+** IAM Policy Simulator
+** 
