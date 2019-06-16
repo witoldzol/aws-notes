@@ -380,9 +380,11 @@ It uses edge locations
 *** SSE-KMS Encryption can lower performance
 You may have AWS limit for KMS usage ( 100s - 1000s download/upload per second)
 
-
- 
+* =========
 * CLI
+* =========
+
+* Commands
 //configure cli
 aws configure  //afterwards put in both your keys in
 //list buckets
@@ -393,12 +395,20 @@ aws s3 cp s3://bucketofwitold/dog.jpg s3://mysecondbucketwitold
 aws s3 mb s3://bucket-name-unique
 //remove bucket
 aws s3 rb s3://bucket-name-unique
-
-** EC2
+//create t2 instance
+aws ec2 run-instances --image-id ami-030dbca661d402413 --instance-type t2.micro
+//test command flag ( will not run )
+--dry-run
+* EC2
 NEVER PUT YOUR CREDENTIALS on EC2!!!
 Use IAM Roles to give credentials to EC2
 EC2 can have only 1 ROLE at a time
 You can have as many roles as you want...just one can be used per given instance!
 Each role can have multiple permissions
-** IAM Policy Simulator
-** 
+* EC2 Metadata
+Information about ec2 instance
+DONT FORGET TRAILING SLASH!
+http://169.254.169.254/latest/meta-data/
+* STS command line
+Security Token Service
+aws sts decode-authorization-message --encoded-message
