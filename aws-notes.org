@@ -409,6 +409,19 @@ Each role can have multiple permissions
 Information about ec2 instance
 DONT FORGET TRAILING SLASH!
 http://169.254.169.254/latest/meta-data/
+
+//get temporary credentials
+curl http://169.254.169.254/latest/meta-data/iam/security-credentials/EC2_rolecurl http://169.254.169.254/latest/meta-daa/iam/security-credentials/EC2_role
 * STS command line
 Security Token Service
 aws sts decode-authorization-message --encoded-message
+* SDK
+** default credentials provider chain
+to authorize sdk  you can use:
+- aws credentials on your local computer
+- instance profile credentials using AIM Roles (on EC2 machine etc)
+- environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
+** Exponential backoff
+Included in SDK
+For rate limited api's
+Each retry will take x2 of the previous delay before trying again
