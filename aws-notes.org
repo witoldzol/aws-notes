@@ -441,12 +441,53 @@ Elastic load balancer talk to ASG ( auto scale group )
 Multi instances auto scaled, across multi AZ, load balancer
 *** Update modes
 **** All at once
-Fastest, instances will be temporarily out ( there will be downtime )
+Fastest, 
+instances will be temporarily out ( there will be downtime )
+No cost
 **** Rolling
-Updates backet at a time, and moves to next one when the updated one is healthy again
+Updates backet (N number of instances @ one time to be updated) at a time
+Moves to next bucket when the updated one is healthy
+Can take long time if many instances 
+No cost
+Runs below capacity
 **** Rolling with additional batches
 Spins up a batch to serve all content while the bucket is being updated ( no hit to performance )
+Additional cost (extra instances spinned up to cover downed instances )
+No downtime
+Runs at capacity
 **** Immutable
 Spin up new instances running updated app, in new ASG.
 Swap for old one when all is healthy
+Longest deployment time 
+Great for prod
+Double capacity at a time
+No downtime
+High extra cost
+**** Blue / Green
+Deploy new environment
+Redirect a bit of traffic using Route 53 to new environment ( weighted policy )
+When all is ok
+DNS changed when all is ok
+Takes long time to deploy
+*** Updating 
+New code has to be ZIPped
+All params can be set up within code
+Files have to be in a folder called, in the ROOT level of the application
+File format: YAML / JSON
+Files must end with: .config extension
+You can change default settings using OPTION_SETTINGS parameter
+You can additional resources using those options
+#+BEGIN_SRC 
+.ebextensions/
+#+END_SRC
+IF YOU DELETE environment, you will loose all .ebextension resources associated with it ( also RBS )
+*** CLI
+**** commands
+eb deploy
+eb create
+eb status
+eb health
+eb open
+...
+**** helpful for automated deployment pipelines
 * =========
