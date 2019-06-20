@@ -425,3 +425,28 @@ to authorize sdk  you can use:
 Included in SDK
 For rate limited api's
 Each retry will take x2 of the previous delay before trying again
+* =========
+* ELASTIC BEANSTALK
+*** 3 Components
+**** Application
+**** Application version
+**** Environment name (dev, test, prod)
+*** Deployment modes
+**** Single instance
+Good for development
+1 instance + security group + elastic IP + auto scaling group in one AZ 
+**** High Availability with Load Balancer
+Good for prod
+Elastic load balancer talk to ASG ( auto scale group )
+Multi instances auto scaled, across multi AZ, load balancer
+*** Update modes
+**** All at once
+Fastest, instances will be temporarily out ( there will be downtime )
+**** Rolling
+Updates backet at a time, and moves to next one when the updated one is healthy again
+**** Rolling with additional batches
+Spins up a batch to serve all content while the bucket is being updated ( no hit to performance )
+**** Immutable
+Spin up new instances running updated app, in new ASG.
+Swap for old one when all is healthy
+* =========
