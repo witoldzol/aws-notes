@@ -427,6 +427,7 @@ For rate limited api's
 Each retry will take x2 of the previous delay before trying again
 * =========
 * ELASTIC BEANSTALK
+Relies on CLOUD FORMATION under the hood
 *** 3 Components
 **** Application
 **** Application version
@@ -481,6 +482,16 @@ You can additional resources using those options
 .ebextensions/
 #+END_SRC
 IF YOU DELETE environment, you will loose all .ebextension resources associated with it ( also RBS )
+*** Optimization
+This is how the process looks like:
+1) Describe dependencies ( eg. package.json )
+2) Package zip with source code
+3) Upload zip to EC2
+4) Resolve / download dependencies on each EC2
+
+Last step takes the longes ( if lots of deps )
+
+TO INCREASE SPEED, PACKAGE DEPENDENCIES WITH SOURCE CODE
 *** CLI
 **** commands
 eb deploy
