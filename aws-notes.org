@@ -520,6 +520,28 @@ Interaction used with Git commands
 *** Authorization: ( you have access to do stuff )
 IAM Policies manage user / roles access to repos
 *** Encryption
-Repos are encrypted automatically using KMS
+REST: Repos are encrypted automatically using KMS
+TRANSIT: https or ssl
+*** Cross Account Access
+Use IAM Role and AWS STS ( AssumeRole API )
+DO NOT SHARE SSH / AWS credentials EVER!
+*** CodeCommit vs GitHub
+**** Similar
+Both are git repos
+Support code reviews ( Pull Requests )
+Can be integrated with CodeBuild
+Support HTTPS and SSH for authentication
+**** Differences
+***** Security
+Github is administered using GITHUB USERS
+CodeCommit uses IAM roles & users
+***** Hosted
+GitHub is 3rd party
+CodeCommit is manages & hosted by AWS
+***** Notifications
+CodeCommit can be integrated with
+- AWS SNS ( Simple Notification Service )
+- AWS Lambda
+- AWS CloudWatch Event Rules
 
 
