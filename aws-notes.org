@@ -539,9 +539,22 @@ CodeCommit uses IAM roles & users
 GitHub is 3rd party
 CodeCommit is manages & hosted by AWS
 ***** Notifications
+: every time someone commits code, we can trigger events / background checks
+: for example, lambda can check if there are any credentials in the code ...
 CodeCommit can be integrated with
 - AWS SNS ( Simple Notification Service )
 - AWS Lambda
 - AWS CloudWatch Event Rules
+*** Notification 
+Use cases:
+**** SNS / Lambda
+1) Deletion of branches
+2) Trigger on pusho to master branch
+3) Notify External Build System
+4) Trigger Lambda to perform code analysis
+**** CloudWatch Rules
+1) Trigger for Pull Requests ( create / update / delete / comment )
+2) Commit comments events
+3) CloudWatch Event Rules goes into an SNS topic ( sns - simple notification service)
 
 
