@@ -502,3 +502,12 @@ eb open
 ...
 **** helpful for automated deployment pipelines
 * =========
+* CI CD
+** CodeCommit
+Version control
+Private Git repository
+No size limit
+Fully managed, highly available
+Cody stays in AWS Cloud account ( security )
+Secure ( encryption , access control etc )
+
