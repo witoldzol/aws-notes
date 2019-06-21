@@ -510,4 +510,16 @@ No size limit
 Fully managed, highly available
 Cody stays in AWS Cloud account ( security )
 Secure ( encryption , access control etc )
+Integreated with CI tools ( CodeBuild, Jenkins etc )
+** CodeCommit Security
+Interaction used with Git commands
+*** Authentication: ( you are who you say you are )
+-HTTPS (use AWS CLI Authentication or generate HTTPS credentials )
+-SSL Keys (configure keys via AIM Console)
+-MFA ( multi factor )
+*** Authorization: ( you have access to do stuff )
+IAM Policies manage user / roles access to repos
+*** Encryption
+Repos are encrypted automatically using KMS
+
 
