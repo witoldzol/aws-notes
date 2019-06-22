@@ -575,6 +575,19 @@ Fully managed build service
 Continuous scaling ( no build queue,build server to manage etc ...  unlike Jenkins )
 Pay for usage ( the time used to build )
 Uses docker ( you can use your own docker images )
+Build instructions CAN be defined in code ( in BUILDSPEC.YML file) !important
+Output logs ===> S3 & CloudWatch
+Use CloudWatch to trigger notifications ( and detect failed builds etc)
+Use Lambda as Glue
+Use SNS notifications
+You can reproduce build locally to troubleshoot
+You can use docker to extend any environment you like ( eg. Huskel ) - its fully extensible because of it
+** Code source
+Github
+CodeCommit
+CodePipeline
+S3
+...
 ** Integrations
 KMS for encription
 IAM for build permissions
