@@ -565,4 +565,10 @@ Use cases:
 4) CloudWatch will send email notification
 * CodePipeline
 Each stage generates 'artifacts' that are stored in S3 bucket ( and passed from there to next stage )
-Each change in state generates CloudWatch event which in turn can create SNS notification ( you can create events for failed pipelines )
+Each change in state generates CloudWatch Events which in turn can create SNS notification ( you can create events for failed pipelines )
+On failure at any stage, pipeline stops
+You can use AWS CloudTrail to audit API calls
+If pipeline fails stage check if it has necessary permissions "IAM Service Role" (check attached policies)
+When created CodePipeline creates CloudWatch Event rule that will trigger ( on commit or can check periodically )
+* CodeBuild
+Fully managed build service
