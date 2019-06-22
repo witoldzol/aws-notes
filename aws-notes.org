@@ -582,6 +582,7 @@ Use Lambda as Glue
 Use SNS notifications
 You can reproduce build locally to troubleshoot
 You can use docker to extend any environment you like ( eg. Huskel ) - its fully extensible because of it
+You can use S3 Cache Bucket to cache build dependencies ( if you say are doing multiple builds etc )
 ** Code source
 Github
 CodeCommit
@@ -593,3 +594,11 @@ KMS for encription
 IAM for build permissions
 VPC for network security
 CloudTrail for API calls tracing
+** buildspec.yml
+Must be at the ROOT of the code
+Contains variables ( plaintext or SSM param store )
+*** Phases
+Install : gets dependencies
+Pre-build : final commands before build
+Build : actual build commands
+Post build : finishing touches ( eg. zipping files )
