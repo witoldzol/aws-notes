@@ -614,3 +614,9 @@ Application is pulled from GitHub / S3
 EC2 runs deployment instructions
 CodeDeploy reports success / failure of the deployment
 
+EC2 instances are grouped by deployment group ( dev / qa / prod )
+CodeDeploy can be chained into CodePipeline and use artifacts from there 
+CodeDeploy can reuse tools , autoscaling integrations, other apps
+Blue / Green works with EC2 instances
+CodeDeploy supports AWS Lambdas
+CodeDeploy DOES NOT provision resources ( EC2 instances are assumed to already exist! )
