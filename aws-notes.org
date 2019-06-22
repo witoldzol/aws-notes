@@ -467,6 +467,7 @@ No downtime
 High extra cost
 **** Blue / Green
 Deploy new environment
+Spin up 100 % extra instances with new code
 Redirect a bit of traffic using Route 53 to new environment ( weighted policy )
 When all is ok
 DNS changed when all is ok
@@ -620,3 +621,35 @@ CodeDeploy can reuse tools , autoscaling integrations, other apps
 Blue / Green works with EC2 instances
 CodeDeploy supports AWS Lambdas
 CodeDeploy DOES NOT provision resources ( EC2 instances are assumed to already exist! )
+** appspec.yml !important
+*** file section
+how to source & copy files from S3 / GitHub
+*** hooks ( can have timeouts )
+Not all of them have to be defined 
+deployment instructions
+Order of hooks:
+1) Application stop : Stop application
+
+2) DownloadBundle : How to download app
+
+3) BeforeInstall : Prep before instal
+
+4) AfterInstall : cleaup etc
+
+5) ApplicationStart : start up
+
+6) ValidateService : check if deployment succeded
+*** deplyment config
+One at a time
+Half at a time
+All at once ( quickest but with downtime - good for dev )
+Custom ( eg 75% )
+*** failure
+If deploy fails, instance STAYS in fail state
+New deploy starts with failed instances
+To rollback : redeploy previous version OR enable automatic rollback for failures
+*** deployemnt target 
+EC2 instances with tags
+AutoScalingGroup (ASG)
+Mix of above
+DEPLOYMENT_GROUP_NAME variable for extra config
