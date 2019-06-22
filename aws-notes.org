@@ -289,6 +289,7 @@ Objects encrypted server side
 Encryption: AES-256
 When sending data to S3: set header: "x-amz-server-side-encryption":"AES256"
 *** SSE-KMS
+Key Managed Service
 Keys managed by Key Management Service
 Key is called: "Customer Master Key" ( CMK )
 KMS gives you more control over keys and audit trail
@@ -511,6 +512,11 @@ Fully managed, highly available
 Cody stays in AWS Cloud account ( security )
 Secure ( encryption , access control etc )
 Integreated with CI tools ( CodeBuild, Jenkins etc )
+*** Requirements
+You must have
+- 1.7.9 github version to use CodeCommit
+- IAM policy & user for accessing AWS CodeCommit OR belong to CODESTAR project team
+
 ** CodeCommit Security
 Interaction used with Git commands
 *** Authentication: ( you are who you say you are )
@@ -548,13 +554,15 @@ CodeCommit can be integrated with
 *** Notification 
 Use cases:
 **** SNS / Lambda
-1) Deletion of branches
-2) Trigger on pusho to master branch
-3) Notify External Build System
-4) Trigger Lambda to perform code analysis
+1) Push to existing branch
+2) Create branch
+3) Delete branch
+4) Trigger Lambda OR SNS
 **** CloudWatch Rules
 1) Trigger for Pull Requests ( create / update / delete / comment )
 2) Commit comments events
 3) CloudWatch Event Rules goes into an SNS topic ( sns - simple notification service)
-
-
+4) CloudWatch will send email notification
+* CodePipeline
+Each stage generates 'artifacts' that are stored in S3 bucket ( and passed from there to next stage )
+Each change in state generates CloudWatch event which in turn can create SNS notification ( you can create events for failed pipelines )
