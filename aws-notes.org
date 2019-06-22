@@ -572,3 +572,11 @@ If pipeline fails stage check if it has necessary permissions "IAM Service Role"
 When created CodePipeline creates CloudWatch Event rule that will trigger ( on commit or can check periodically )
 * CodeBuild
 Fully managed build service
+Continuous scaling ( no build queue,build server to manage etc ...  unlike Jenkins )
+Pay for usage ( the time used to build )
+Uses docker ( you can use your own docker images )
+** Integrations
+KMS for encription
+IAM for build permissions
+VPC for network security
+CloudTrail for API calls tracing
