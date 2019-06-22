@@ -601,4 +601,16 @@ Contains variables ( plaintext or SSM param store )
 Install : gets dependencies
 Pre-build : final commands before build
 Build : actual build commands
-Post build : finishing touches ( eg. zipping files )
+Post build : finishing touches ( zipping files )
+Upload artifacts to S3
+Cache files to S3 ( usually dependencies )
+*** Local build ( for troubleshooting )
+Uses CodeBuild Agent
+* CodeDeploy
+Each EC2 ( or On Premise machine ) MUST run CodeDeploy Agent
+Agent keeps asking CodeDeploy for work
+CodeDeploy points at APPSPEC.YML !important
+Application is pulled from GitHub / S3
+EC2 runs deployment instructions
+CodeDeploy reports success / failure of the deployment
+
