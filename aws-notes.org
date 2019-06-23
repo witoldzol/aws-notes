@@ -699,39 +699,39 @@ Makes SEPARATION OF CONCERNS easy ( you can have separate stack for VPC , networ
 **** Template Helpers
 1) References
 2) Functions
-*** Template: Resources
-**** Mandatory part of template
-**** Represent componenets that will be created / configured
-**** Can reference each other
-**** Over 224 types of resources
-**** AWS::aws-product-name::data-type-name
-**** YOU CANNOT CREATE DYNAMIC AMOUNT OF RESOURCES!
-**** Almost every service is supported by CloudFormation
-*** Template: Parameters
+**** Template: Resources
+***** Mandatory part of template
+***** Represent componenets that will be created / configured
+***** Can reference each other
+***** Over 224 types of resources
+***** AWS::aws-product-name::data-type-name
+***** YOU CANNOT CREATE DYNAMIC AMOUNT OF RESOURCES!
+***** Almost every service is supported by CloudFormation
+**** Template: Parameters
 Use if template configuration might change in future
 If parameter changes, you don't have to re-upload the whole template
 Parameters can be referenced anywhere in your template
 #+BEGIN_SRC 
 Fn::Ref      ( short version: )   !Ref
 #+END_SRC
-**** Pseudo Parameters
+***** Pseudo Parameters
 Eg:
 AWS::AccountId
-*** Template: Mappings
+**** Template: Mappings
 Fixed variables in CloudFormation Template
 Values are hardcoded in the template
 Eg: region map with ami codes for each zone
-**** Access mappings values
+***** Access mappings values
 Fn::FindInMap   || !FindInMap (shorthand version)
-*** Template: Outputs
+**** Template: Outputs
 Optional values being exported from the template
 Outputs can be viewed in AWS Console or CLI
 Used for cross-stack collaboration ( each expert looks after their domain and outputs needed details used in other stacks)
 You CANNOT DELETE stack if it's output is being referenced in some other stack!
 Exporting value is OPTIONAL
-*** Template: Imports
+**** Template: Imports
 Fn::ImportValue     !ImportValue (shorthand)
-*** Template: Outputs
+**** Template: Outputs
 Based on condition Resources can be created || Values output
 Conditions are on the same level as a resource TYPE that is to be created should condition evaluate to TRUE
 #+BEGIN_SRC 
@@ -769,4 +769,43 @@ Join a list of values with a specified delimiter
 !Join [ : , [a,b,c]] ---> a:b:c
 #+END_SRC
 **** Fn::Sub
+Substitution
+#+BEGIN_SRC 
+!Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/${vpc}'
+#+END_SRC
+
+#+BEGIN_SRC 
+Name: !Sub
+  - www.${Domain}
+  - { Domain: !Ref RootDomainName }
+#+END_SRC
 **** Conditions ( Fn::If, Fn::Else, Fn::Not, Fn::Equals ...)
+*** Rollbacks
+**** Creation fail
+If stack creation fails: everything is rolled back ( default ) ie. everything gets deleted
+You can disable rollback 
+**** Update fail
+Rolls back to last working state
+* ==========
+* Monitoring
+* ==========
+* CloudWatch
+Provides monitoring for EVERY service in AWS
+Metric is a VARIABLE to monitor ( cpu utilization etc)
+Metrics belong to namespaces
+Metrics have timestamps
+** Metric: dimension
+Dimension is an attribute of Metric ( eg: instance id )
+You can have up to 10 dimensions per metric
+** EC2
+Monitoring every 5 min
+For extra pay you can monitor every 1 min ( Detailed monitoring )
+Memory usage is not 'pushed' by default, must be pushed from instance as a custom metric
+** Metric: resolution
+FOR CUSTOM METRICS:
+How often we get data
+By default: every 1 minute
+Detailed resolution : up to [ every 1 second ]
+** PutMetricData
+Use this API call to send the metric data
+** Use exponential back off
