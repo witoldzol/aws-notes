@@ -670,3 +670,51 @@ DEPLOYMENT_GROUP_NAME variable for extra config
 7) Make sure APPSPEC.YML is defined in ROOT of the source code
 ** Cloud Formation
 Infrastructure as Code ( you declare what you want, and AWS gets it for you )
+Can be version controlled
+Changes to infrastructure are done via code review
+It's FREE
+Easy to estimate cost of infrastructure created via Cloud Formation
+Helps to save ( destroy infrastrucutre in the evening and recreate it in the morning )
+Declarative programming ( Cloud Formation figures out the order of things and orchestration )
+Makes SEPARATION OF CONCERNS easy ( you can have separate stack for VPC , network, App stack ...)
+*** Templates
+- Have to be uploaded to S3
+- You can't edit them, upload NEW version, CF will figure out the difference between them
+- Stacks are identified by name
+- Deleting a stack will delete every associated artifact created by CF
+**** Deploying templates
+***** Manual
+- Edit template in CloudFormation Designer
+- Use console to insert parameters
+***** Automated
+- Edit template in YAML file
+- Use CLI to deploy
+**** Template elements
+1) Resources ( eg. EC2, LoadBalancers, Security Groups....) //MANDATORY
+2) Parameters (dynamic inputs)
+3) Mappings (static variables)
+4) Outputs ( other CF can reference those )
+5) Conditionals ( if statements that controll what gets created )
+6) Metadata
+**** Template Helpers
+1) References
+2) Functions
+*** Template: Resources
+**** Mandatory part of template
+**** Represent componenets that will be created / configured
+**** Can reference each other
+**** Over 224 types of resources
+**** AWS::aws-product-name::data-type-name
+**** YOU CANNOT CREATE DYNAMIC AMOUNT OF RESOURCES!
+**** Almost every service is supported by CloudFormation
+*** Template: Parameters
+Use if template configuration might change in future
+If parameter changes, you don't have to re-upload the whole template
+Parameters can be referenced anywhere in your template
+#+BEGIN_SRC 
+Fn::Ref      ( short version: )   !Ref
+#+END_SRC
+**** Pseudo Parameters
+Eg:
+AWS::AccountId
+
