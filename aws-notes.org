@@ -733,6 +733,13 @@ Exporting value is OPTIONAL
 Fn::ImportValue     !ImportValue (shorthand)
 *** Template: Outputs
 Based on condition Resources can be created || Values output
+Conditions are on the same level as a resource TYPE that is to be created should condition evaluate to TRUE
+#+BEGIN_SRC 
+Resources:
+  MountPoint:
+    Type: "AWS::EC2::VolumeAttachment"
+    Condition: SomeConditionName
+#+END_SRC
 types of conditions: environment, region, parameter value... anything you want
 Conditions can referece other conditions
 Eg:
@@ -741,3 +748,25 @@ Eg:
      CreateProd: !Equals [ !Ref EnvType, prod ]
 //compares the two values in brackets
 #+END_SRC
+*** Intrinsic Functions
+**** Fn::Ref !important
+References parameter / resource 
+Returns VALUE of param / ID of resource !
+**** Fn::GetAtt
+Gets RESOURCES attribute
+#+BEGIN_SRC 
+!GetAtt ResourceName.attributeName
+#+END_SRC
+**** Fn::FindInMap
+Get a value from specific key
+!FindInMap [ MapName, TopLevelName, SecondLevelName ]
+**** Fn::ImportValue
+Import value of the param that has been EXPORTED
+**** Fn::Join
+Join a list of values with a specified delimiter
+#+BEGIN_SRC 
+!Join [ delimiter, [comma-delimited list of values ] ]
+!Join [ : , [a,b,c]] ---> a:b:c
+#+END_SRC
+**** Fn::Sub
+**** Conditions ( Fn::If, Fn::Else, Fn::Not, Fn::Equals ...)
