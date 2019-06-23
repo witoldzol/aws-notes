@@ -809,3 +809,65 @@ Detailed resolution : up to [ every 1 second ]
 ** PutMetricData
 Use this API call to send the metric data
 ** Use exponential back off
+** Alarms
+Can be triggered by any metric of our choice
+Can go to ASG, EC2, SNS notifications
+Custom Metrics: you can only choose PERIOD 10 or 30 seconds
+*** Alarm States
+- OK
+- INSUFFICIENT_DATA
+- ALARM
+** Logs
+Applications can send LOGs to CloudWatch ( using SDK )
+Can be collected from : BeansTalk, ECS, VPC flow logs, API Gateways, CloudTrail, Route53, CloudWatch Log Agents on EC2 machines, Lambdas..
+Can be passed on to S3 for archiving
+Can be STREAMED to ElasticSearch for further analytics or to AWS LAMBDA
+Can use filter expressions
+Can define expiration policy ( never, 30 days ...)
+YOU HAVE TO SET UP IAM PERMISSION to send logs to CloudWatch!
+*** Log storage architecture
+Log groups: arbitrary name
+Log stream: instances within application / log files / containers
+*** Security
+Logs can be encrypted using KMS at GROUP LEVEL
+** X-Ray
+*** Helps:
+- Troubleshoot performance, finds bottlenecks
+- Understand dependencies in our architecture ( visual )
+- Pinpoints service issues
+- Find errors and exceptions
+- Find if we meet our SLA obligations etc
+- Identify users that are impacted
+*** Compatible with:
+- Lambda
+- Beanstalk
+- ECS
+- ELB
+- API Gateway
+- EC2 instances
+- On Premise servers
+*** Tracing
+End to end following of request
+Each component dealing with request adds its own 'trace'
+Trace is made out of SEGMENTS
+Gives you ability to trace every request
+*** Security
+KMS at rest
+IAM for authorization
+*** How to enable !important
+Import in code base, then install daemon which will send 1s batches to AWS X-Ray
+
+**** Code: Java, Go, .Net, Nodejs, Python MUST import AWS SDK
+Application SDK will then capture:
+- calls to AWS services
+- HTTP/s requests
+- Database calls
+- Queue calls
+**** Install X-Ray daemon || Enable X-Ray AWS Integration
+Works as a low level UDP packet interceptor
+Each application must have IAM right to write to X-RAY
+**** MY X-RAY ISNT WORKING!?
+- check IAM permissions on EC2 ( or whatever )
+- check if X-Ray DAEMON is installed & running on your EC2
+**** X-Ray on Lambda
+- enable IAM permission for Lambda ( AWSX-RayWriteOnlyAccess )
