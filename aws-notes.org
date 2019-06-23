@@ -584,6 +584,7 @@ Use SNS notifications
 You can reproduce build locally to troubleshoot
 You can use docker to extend any environment you like ( eg. Huskel ) - its fully extensible because of it
 You can use S3 Cache Bucket to cache build dependencies ( if you say are doing multiple builds etc )
+** When build finishes / fails ===> CONTAINER GETS DELETED!
 ** Code source
 Github
 CodeCommit
@@ -622,6 +623,7 @@ Blue / Green works with EC2 instances
 CodeDeploy supports AWS Lambdas
 CodeDeploy DOES NOT provision resources ( EC2 instances are assumed to already exist! )
 ** appspec.yml !important
+IN ROOT FOLDER !
 *** file section
 how to source & copy files from S3 / GitHub
 *** hooks ( can have timeouts )
@@ -653,3 +655,18 @@ EC2 instances with tags
 AutoScalingGroup (ASG)
 Mix of above
 DEPLOYMENT_GROUP_NAME variable for extra config
+*** permissions that have to be set up
+2 roles:
+- For CodeDeploy ( AWS CodeDeploy policy )
+- For EC2 ( access to S3 -- read only )
+*** HOW TO SET UP DEPLOYMENT
+1) Make sure you have EC2 instances / In place instances
+2) Give IAM role to EC2 instances ( to access data where source code will be )
+3) Install DeploymentAgent on EC2 instances
+4) Put a tag on EC2 instances
+
+5) Give role CodeDeploy
+6) Set up CodeDeploy groups
+7) Make sure APPSPEC.YML is defined in ROOT of the source code
+** Cloud Formation
+Infrastructure as Code ( you declare what you want, and AWS gets it for you )
