@@ -717,4 +717,27 @@ Fn::Ref      ( short version: )   !Ref
 **** Pseudo Parameters
 Eg:
 AWS::AccountId
-
+*** Template: Mappings
+Fixed variables in CloudFormation Template
+Values are hardcoded in the template
+Eg: region map with ami codes for each zone
+**** Access mappings values
+Fn::FindInMap   || !FindInMap (shorthand version)
+*** Template: Outputs
+Optional values being exported from the template
+Outputs can be viewed in AWS Console or CLI
+Used for cross-stack collaboration ( each expert looks after their domain and outputs needed details used in other stacks)
+You CANNOT DELETE stack if it's output is being referenced in some other stack!
+Exporting value is OPTIONAL
+*** Template: Imports
+Fn::ImportValue     !ImportValue (shorthand)
+*** Template: Outputs
+Based on condition Resources can be created || Values output
+types of conditions: environment, region, parameter value... anything you want
+Conditions can referece other conditions
+Eg:
+#+BEGIN_SRC javascript
+  Condtions:
+     CreateProd: !Equals [ !Ref EnvType, prod ]
+//compares the two values in brackets
+#+END_SRC
