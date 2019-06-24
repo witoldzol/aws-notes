@@ -812,12 +812,13 @@ Use this API call to send the metric data
 ** Alarms
 Can be triggered by any metric of our choice
 Can go to ASG, EC2, SNS notifications
-Custom Metrics: you can only choose PERIOD 10 or 30 seconds
+Alarm can be triggered up to every 10s ( MAX ) ( on high resolution metric )
 *** Alarm States
 - OK
 - INSUFFICIENT_DATA
 - ALARM
 ** Logs
+By default: logs NEVER EXPIRE
 Applications can send LOGs to CloudWatch ( using SDK )
 Can be collected from : BeansTalk, ECS, VPC flow logs, API Gateways, CloudTrail, Route53, CloudWatch Log Agents on EC2 machines, Lambdas..
 Can be passed on to S3 for archiving
@@ -871,3 +872,38 @@ Each application must have IAM right to write to X-RAY
 - check if X-Ray DAEMON is installed & running on your EC2
 **** X-Ray on Lambda
 - enable IAM permission for Lambda ( AWSX-RayWriteOnlyAccess )
+- ensure X-Ray is imported in code
+** CloudTrail
+Tracks User activity & API usage
+Governance, audit, compliance for AWS Account
+Enabled by default
+History of events / API calls made out from my AWS account: 
+- Console
+- CLI
+- SDK
+- AWS Services
+You can put output to CloudWatch Logs
+If something gets deleted....check CloudTrail first !important
+* Messaging
+Syncronous
+Asyncronous
+Below services can scale independently from the application
+** SQS !important
+Simple Queue Service
+PRODUCES send messages to SQS ( 1 to many )
+CONSUMERS poll SQS for messages ( 1 to many )
+Producers and Consumers are independent from each other, and can scale 
+*** Standard Queue
+Fully managed
+From 1 to 10,000 messages a second
+DEFAULT message retention: 4 days ( up to 14 days )
+No limit on number of messages
+Low latency ( < 10ms )
+Horizontal scaling in terms of CONSUMERS
+CAN HAVE DUPLICATE MESSAGES
+BEST EFFORT ORDERING ( messages CAN be out of order !)
+Max message size 256KB
+** SNS
+pub/sub model
+** Kinesis
+real time streaming model
