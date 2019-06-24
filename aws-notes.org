@@ -903,7 +903,108 @@ Horizontal scaling in terms of CONSUMERS
 CAN HAVE DUPLICATE MESSAGES
 BEST EFFORT ORDERING ( messages CAN be out of order !)
 Max message size 256KB
+*** Delay Queue
+Delays messages up to 15 minutes
+DEFAULT delay is 0 seconds!
+Set the default at the queue level
+Override default using : DelaySeconds PARAMETER
+*** Messages
+Message body is up to 256Kb and HAS to be a STRING
+
+METADATA ( message attributes ) 3 key value pairs: ( optional )
+-Name
+-Type
+-Value
+
+DELAY DELIVERY ( optional )
+*** Message response
+SQS sends back response to each message
+- Message identifier
+- MD5 hash of the body
+
+*** Consumers 
+They ask SQS for messages ( SQS doesn't push them )
+SQS will send up to 10 messages AT A TIME ( MAX !)
+Once the message is processed by the CONSUMER, consumer will use DeleteMessage API and remove it from SQS
+ReceiptHandle is used to delete message ( consumer gets it upon receiving a message )
+
+*** Visibility timeout !important
+When Consumer gets a message from SQS, that message becomes 'invisible' for other consumers for a given time...
+DEFAULT is 30 seconds ( min: 0 s -- max: 12 hours )
+ChangeMessageVisibility API ( can be used to adjust the timer )
+DeleteMessage API ( tells SQS message can be deleted )
+
+*** Dead Letter Queue 
+"Redrive policy" - treshold of retries to process message before it gets sent to DLQ
+( if say message gets sent for processing 5 times, and keeps coming back, it's probably malformed ... send it to DLQ)
+
+*** Long Polling !important
+Consumer setting...it will wait for message if there are none in the queue
+DECREASES number of API calls ( lowers latency as well )
+INCREASES efficiency of your application
+MIN 1s
+MAX 20s (recommended)
+Can be enabled at the Queue Level ||
+WaitTimeSeconds API 
+
+*** FIFO Queue
+New offering
+Not available everywhere
+No message duplication
+Strict ordering
+Up to 300 messages a second ( 3000 with batching )
+Queue name must end with .fifo
+No delay per message ( only per queue )
+Can do content based ( using content hash )de-duplication ie. removes duplicates by looking at hash codes
+
+*** SQS Extended Client
+Java library
+For messages that are over 256Kb
+Producer sends small meta message is sent to SQS
+Actual message is sent to S3 bucket
+Consumer pulls meta message from SQS and then using information from meta message pulls actual message from S3 bucket
+
+*** Security !important
+Encryption in flight using HTTPS
+SSE ( Server side encryption ) using KMS
+IAM must be set up ( as always )
+SQS queue access policy ( fine grain settings for accessing queue )
+NO VPC ACCESS ( must have internet access to use SQS ) !important
+
+*** API
+CreateQueue
+DeleteQueue
+PurgeQueue ( delete all messages )
+Send-Receive-Delete|Message
+ChangeMessageVisibility
+BatchSendMessage
+BatchDeleteMessage
+THERE IS NO BATCH ReceiveMessage ( you can set that for normal api -- up to 10 messages at a time, hence no need for additional api)
+
 ** SNS
-pub/sub model
+Simple Notification Service
+publisher / subscriber model
+Publisher sends notification to SNS and subscribers get notified 
+Up to 10 million subscriptions per topic
+100, 000 topics limit
+Each subscriber gets all the messages ( can be filtered )
+Potential subscribers:
+- SQS
+- HTTP/S
+- Lambda
+- Emails
+- Sms messages
+- Mobile notifications
+
+SNS integrates with a lot of AWS products:
+- CloudWatch
+- AutoScalingGroup
+- S3
+...many others
+*** Topic publish
+Create topic
+Create subscription/s
+Publish to the topic
+
 ** Kinesis
 real time streaming model
