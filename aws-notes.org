@@ -1139,6 +1139,51 @@ Encrypt passwords using KMS
 Never use recursive code !
 
 Dont use VPC unless you have to ( it takes longer if you do )
+* DynamoDB
+Fully managed
+Replication across 3 AZ
+NoSQL
+Fast and consistent
+Distributed
+Integrated with IAM for authrorization, security 
+Event driven programming with DynamoDB streams
+Low cost
+Auto scales
+** Basics 
+Made out of tables
+Each TABLE has PRIMARY key
+ITEMS = ROWS 
+Each item has attributes ( can be added over time, be null )
+MAX Size of item = 400KB ( a lot for a single row )
+*** Primary key
+1) Partition key only
+Key is hashed
+Should be 'diverse' so entries get spread wide
+
+1) Partition key + sort key
+** Throuput !important
+You have to set the throuput yourself
+You can set auto scaling option 
+Throuput can be exceeded for a short time using "burst credit"
+"ProvisionedThrouputException" -- when you are over your T & out of "burst credits"
+Use exponential backof retry setting !
+
+RCU & WCU are spread evenly across partitions
+
+*** Write Capacity Units
+1 WCU = 1 write per second for 1 item up to 1KB in size ( Sizes get rounded up)
+6 items * 1second * 3.5kb = 24WCU
+6 items * 2 seconds each * 3.5kb = 12WCU
+
+*** Read Capacity Units
+1 RCU = 1 SCR OR 2 ECR for an item up to 4kb
+**** Eventually Consistent Read ( Default )
+If you read the same data after writing it, you can get old data 
+because replication does takes time
+**** Strongly Consistent Read
+You will get consistent reads, even if you query for data you just wrote
+
+
 
 
 
