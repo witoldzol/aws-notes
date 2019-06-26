@@ -1005,6 +1005,140 @@ SNS integrates with a lot of AWS products:
 Create topic
 Create subscription/s
 Publish to the topic
+** SNS + SQS ====> FAN OUT
+Push once to SNS and have many SQS subscribe to it
+Fully decoupled
+No data loss
 
 ** Kinesis
 real time streaming model
+Streams big data
+Great for IoT, logs, metrics etc
+Data automatically replicated to 3 Availability Zones
+*** Kinesis Streams !important
+Low latency streaming at scale
+Divided into ordered SHARDS / partitions
+More shards = more data throughput ( you can always add more )
+DEFAULT data retention: 1 day ( MAX 7 days )
+Allows reprocessing / replaying of data ( as opposed to SQS -- once data is processed, its gone )
+Multiple applications can consume the same stream
+Data in Kinesis is immutable ( cannot be modified )
+Data is encoded using Base64
+**** Shard
+1 shard = 1MB/s || 1000 messages/s   ( per SHARD ) WRITE!
+1 shard = 2MB/s ( READ ! )
+You pay per shard ( even if not used !)
+Batching is available ( to lower cost )
+You can add ( re-shard ) / remove (merging) shards as needed 
+Records are ordered PER SHARD ( SQS Standar - some order, FIFO - stictly ordered )
+**** API
+PutRecords
+You can use batching for lower cost and higher throughput
+MessageKey is added to the data, and hashed
+It is used to determine where to send the data ( to which shard )
+To avoid sending data to the same shard (hot shard/partition), use HIGHLY DISTRIBUTED KEY !important
+Example:
+if you use user_id as key...it will be highly distributed
+if you use country_id, and most of your users are in one country...hash of that key will be the same, and data will flow to the same shard
+You can use CLI, SDK, AWS console to call API's, 
+You can use Client  libraries ( KCL - kinesis client library )
+**** 'ProvisionedThroughputExceeded' exception
+If you go over throughput limit
+Solutions:
+- use highly distributed MESSAGE KEY
+- retries with backoff
+- re-shard (scale)
+
+*** Kinesis Analytics
+Real time analysis on streams using SQL
+Fully manages, no need to provision servers
+Pay for usage / consumption ( as opposed to shards )
+You can create new streams from analytics
+*** Kinesis Firehose
+Load streams to S3, ElasticSearch...
+Fully managed, auto scaling
+Supports many formats of data
+Pay for usage ( what goes through it)
+*** Kinesis Security
+Authorization with IAM
+Encription at flight using HTTPS
+At REST using KMS
+You can encrypt on Client Side
+VPC endpoints are AVAILABLE ( unlike SQS )
+* Serverless
+We don't manage the server
+- Lambda
+- S3
+- Dynamo DB
+- SNS / SQS
+- Aurora Serverless
+- AWS Cognito
+- AWS API Gateway
+- AWS Kinesis
+* Lambda
+On demand
+Virtual functions
+No servers to manage
+Automated scaling
+Pay per invocation & execution time
+Free 1million requests & 400,000GB of compute time
+Integrated with the full AWS stack ( can be used anywhere )
+Integreated with all major languages
+Monitoring via CloudWatch
+You can allocate RAM size to functions 
+DEFAULT time out is 3 seconds ( MAX 300s )
+Memory: 128MG - 3GB
+Ability to deploy in VPC
+IAM role has to be attached to function
+** Concurrency
+Up to 1000 concurrent executions ( can be higher through ticket )
+Reserved concurrency: max concurent lambdas
+If you end up over limit: THROTTLE will kick in
+Throttle:
+- synchronous -> return TrottleError ( 429 )
+- asynchronous -> retry...if to many retries ( 2 retries )...send to DeadLetterQueue ( if you set it up !)
+DLQ can be SNS topic or SQS ( Remember that Lambda must have IAM authorization to send to those services ) !important
+** Logs
+Execution logs are stored in CloudWatch Logs
+Metrics are stored in CloudWatch Metrics
+Make sure Lambda has IAM access to write to CloudWatch
+
+X-ray can be enabled for Lambda ( daemon is handled by AWS )
+Set up IAM for x-ray...
+** Limits
+Memory: 128 - 3008MB (64MB increments)
+Max execution time: 5 min
+Disc capacity 512MB ( in /tmp folder )
+Concurrency limit: 1000 ( open support ticket to increase )
+
+Lambda zipped max size : 50MB
+Lambda unzipped max size: 250MB
+You can use /tmp to go over the size limit
+Max size of environment variables 4Kb ( total )
+** Versions
+When you work on lambda it is $LATEST version
+Once you publish lambda:
+- it becomes immutable
+- it gets ARN
+- it gets version number ( increasing )
+
+*** Aliases
+Aliases are mutable, and can point at specific versions
+
+** Best practices !important
+
+Perform heavy duty outside of lambda :
+- connecting to DB
+- initializing SDK
+- pull in data / dependencies OUTSIDE of lambda function ( use execution context )
+
+Use environment variables for DB connection strings, S3 buckets... don't put them directly into your code!
+
+Encrypt passwords using KMS
+
+Never use recursive code !
+
+Dont use VPC unless you have to ( it takes longer if you do )
+
+
+
