@@ -1182,8 +1182,95 @@ If you read the same data after writing it, you can get old data
 because replication does takes time
 **** Strongly Consistent Read
 You will get consistent reads, even if you query for data you just wrote
-
-
-
-
+*** Throttiling
+If your key is not distributed enough, you might end up with a 'hot' partition
+that gets the bulk of traffic
+this can lead to :
+"ProvisionedThroughputExceededException"
+Solution:
+- use highly distributed keys
+- exponential backof on retries
+- use DynamoDB Accelerator ( DAX ) -- RCU only
+*** API !important
+**** WRITE ------------
+**** PutItem
+Full replace ! or create
+Consumes WCU
+**** UpdateItem
+Partial replace 
+**** Conditional Updates
+Update/replace data only if given condition is met
+Useful in situation when two updates occurr at the same time ( helps with concurrent access to items )
+No performance impact
+**** DeleteItem
+Deletes individual item
+Can do conditional delete
+**** DeleteTable
+Faster than deleting individual items
+**** BatchWriteItem
+Up to 25 PutItem AND/OR DeleteItem in one call ( NO updateItem )
+LIMITS:
+Up to 16MB per batch AND 400KB per item
+Batching lowers latency
+More efficient, because DynamoDB will execute them in parallel
+Part of batch can fail, and ITS YOUR REPSPONSIBILITY TO RETRY ( use exponential backoff )
+**** READ-----------
+**** GetItem
+Read based on Key ( HASH OR HASH-RANGE )
+**** ProjectionExpression
+Use If you want to get only certain attributes 
+**** BatchGetItem
+Up to 100 items
+Upt to 16MB of data
+Executed in parallel
+**** Query
+Efficient way to get data
+PartitionKey value ( must use = operator ) !important
+SortKey value ( =, >, <, Between, Begin etc ) -- optional
+FilterExpression -- if you want to further filter ( FILTERING OCCURS CLIENT SIDE, DYNAMODB doesn't do processing )
+Returns:
+Up to 1MB
+or number of items specified in LIMIT
+You can paginate results
+**** Scan
+Scans entire table
+Very inefficient
+Up to 1MB of data returned
+Consumes of RCU
+You can use LIMIT
+You can use parallel scans for better performance ( even more RCU used up )
+You can use ProjectionExpression AND FilterExpress ( WILL NOT LOWER RCU USED UP )
+**** LSI ( Local Secondary Index )
+Must be defined at table CREATION time
+It's LOCAL to the partition INDEX
+**** GSI ( Global Secondary Index)
+To speed up queries on non-key attributes
+Creates 'new' table
+**** Concurrency
+DynamoDB is OPTIMISTIC LOCKING / concurrency database  !important
+**** DAX ( Dynamo Accelerator )
+Cache for DynamoDB
+Writes go through DynamoDB
+Extremely low latency for cached READS/QUERIES
+Solves 'hot key' problem
+DEFAULT : items live 5 min in cache
+Up to 10 nodes in cache cluster
+It is multi AZ
+Secure at rest KMS
+IAM...the usual
+VPC suported
+**** Dynamo Streams
+Create/Delete/Update operations on DB create CHANGELOG
+Changelog can be streamed and acted on ( eg. use LAMBDA or SNS )
+Data retaine for 24h ( just like Kinesis )
+**** Other
+Backup & Restore options available (no impact on performance)
+You can create GLOBAL Table ( high performance / fully replicated )
+You can use DMS to migrate other DB to Dynamo ( Oracle, Mongo etc )
+You can run local Dynamo for development on your computer
+**** Security
+KMS at rest\
+SSL/TSL at flight
+IAM for authorization
+VPC available 
 
