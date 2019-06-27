@@ -1274,3 +1274,55 @@ SSL/TSL at flight
 IAM for authorization
 VPC available 
 
+* API GATEWAY
+Lambda + API = no infrastructure to manage
+Handles api versioning
+Allows multiple environments
+Handles security ( auth & authent )
+Handles throttling
+Genereate SDK & api specs
+Cache API responses
+Creates API keys
+
+** Integrations
+*** Outside VPC
+- Lambda
+- EC2
+- Load Balancers
+- ANY AWS service
+- External HTTP endpoints
+*** Inside VPC
+- Lambda
+- EC2
+** Stage Deployments
+*** Stage Variables
+Act like env vars in API Gateway ( can change code behaviour )
+Use to change configiguration values
+Use to define HTTP endpoints your STAGES talk to ( dev, test, prod )
+Pass configuration params
+Stage vars are passed to the CONTEX object in Lambda
+Stage vars help define what the code does, and where it points
+*** Canary deployment
+Redirect % of traffic to updated API to test it
+Used mostly for prod
+Metrics & logs are separate for each version of api being tested
+Like blue / green deployment in Lambda 
+** Mapping Templates !important
+Used to modify requests
+Rename params
+Add headers
+We can use VLT ( velocity template language )
+** Swagger
+Documents API
+Can be written in JSON or YAML
+You can export current API as Swagger / OPENAPI
+** Cache
+DEFAULT live : 300 seconds ( 5 MIN )
+MIN 0, MAX: 3600 seconds ( 1h )
+Cache is defined per STAGE ( so dev can have different cache then prod )
+Cache can be encrypted
+MIN size: 0.5 GB 
+MAX size: 237 GB
+You can override cache for specific methods
+You can flush whole cashe from console
+Client with proper IAM authorization CAN FLUSH CASH ( header: Cache-Control: max-age=0)
