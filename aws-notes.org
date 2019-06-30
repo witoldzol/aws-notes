@@ -1467,3 +1467,48 @@ Scalable
 IAM integration
 CloudWatch Events Notification
 Integrated with CloudFormation
+
+*** API
+ssm GetParameters
+ssm GetParametersByPath
+
+** Cross Account Access
+Define role in IAM for another account to access
+Define which account can access the role
+Use STS ( Security Token Service ) to get creds and access role ( ASSUMEROLE API )
+Temp creds can be  valid between 15 min up to 1 h
+
+* OTHER
+** CloudFront 
+Its a CDN ( content delivery network )
+Improves performance / availability / fully encrypted
+Content cached
+136 Points globally
+Popular with S3
+Supports HTTPs, SSL encryption
+Can help against DDNS attacks
+Supports RMTP algo encryptions
+
+
+** Step Functions
+Orchestration of lambdas ( visual )
+Max execution of 1 year
+Use cases:
+order fulfilment
+data processng etc
+
+** SWF
+Coordinates work between applications
+Workflow tool ( older than step functions - probably not supported anymore )
+Use only if you need EXTERNAL SIGNALS or CHILD PROCESSES !important
+
+** SES 
+Simple Email service
+
+* Databases
+** RDS : relational databases
+** DynamoDB: noSQL, serverless
+** ElastiCache: in memory ( redis / memcached )
+** Redshift: OLAP - analytic processing ( data warehouseing )
+** Neptune: Graph database
+** DMS: Database Migration Service
