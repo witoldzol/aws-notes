@@ -1363,6 +1363,8 @@ ECS agent registers the instance to the ECS cluster
 Metadata in JSON format 
 Tells ECS how to run Docker Container
 You have to provide TASK ROLE ( if container can't do something, it's probably because it doesn't have a task role)
+They have to have IAM Roles to execute against AWS ( EC2 instances don't need roles )
+Security groups operate on INSTANCE LEVEL not TASK level, so each instance has to have its own sec group
 
 ** Dynamic host port mapping 
 Available only with Application Load Balancer ( Classic LB can't do it )
@@ -1375,6 +1377,9 @@ Amazon's repository for docker images
 
 *** Push commands
 1) log in to ECR ( cli )
+
+Integrated with IAM 
+If it doesn't work, check IAM permissions!
 
 //LINUX/MAC
 $(aws ecr get-login --no-include-email --region eu-west-1)
@@ -1396,3 +1401,69 @@ docker push 489210310983.dkr.ecr.eu-west-1.amazonaws.com/<name>:latest
 ** Fargate
 ( Serverless )
 We don't have to provision EC2 anymore
+Fargate provisions instances and gives them ENI
+Specify spec ( CPU / RAM )
+Fargate tasks can have IAM Roles which are used to execute agains AWS
+
+** Integrations 
+*** X-Ray
+You need to run separate container with task definition to run X-Ray
+
+*** CloudWatch Logs
+Set up logging at TASK DEFINITION level
+Each container can have a separate log stream
+
+** CLI ECR
+//login
+aws ecr get-login
+
+//pull
+docker pull <name>
+
+//push
+docker push <name>
+
+//build
+docker build -t demo
+
+//create service on ECS
+aws ecs create-service
+
+* SECURITY
+** KMS
+Key Management Service
+Manages data keys
+You can audit key usage ( CloudTrail ) !important
+Fully integrated with IAM for authorization
+Full integration with EBS/S3/RDS/Param Store
+Can be used as CLI/SDK
+
+CMK - customer master key ( used for data encryption ) can NOT be retrieved by USER ( ever ! )
+CAN ENCRYPT UP TO only 4KB OF DATA PER CALL !important
+If data is bigger than 4kb, use ENVELOPE ENCRYPTION
+
+*** Keys
+Managed SEervice Default keys: free
+User keys created with KMS: 1$/month
+User keys imported ( 256bit symmetric) 1$/month
++ every 10000 api calls = 0.03$
+
+*** ENVELOPE ENCRYPTION
+Used for data over 4kb
+Use Encryption SDK ( also known as envelope encryption )
+Its cumbersome, and has many steps, aws SDK makes it easier via api
+We use GenerateDataKey API call to get data key from KMS ( 2 of them )  !important
+Encryption happens CLIENT SIDE
+KMS generates two CMK'S:
+-plain text key
+-encrypted key
+
+** Parameter Store
+Serverless
+Free
+KMS integration
+Version tracking
+Scalable
+IAM integration
+CloudWatch Events Notification
+Integrated with CloudFormation
