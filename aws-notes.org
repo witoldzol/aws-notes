@@ -1326,3 +1326,73 @@ MAX size: 237 GB
 You can override cache for specific methods
 You can flush whole cashe from console
 Client with proper IAM authorization CAN FLUSH CASH ( header: Cache-Control: max-age=0)
+* SAM
+Severless Application Model
+YAML configuration
+Genrate CloudFormation from YAML file
+Can use CodeDeploy to deploy Lambdas
+Can help run Lambda, Gateway, Dynamo locally
+
+** Header - Transform
+Egxample:
+Transform: 'AWS::Serverless-2016-10-31'
+
+** use package & deploy when processing template 
+cloudformation package
+cloudformation deploy
+
+* ECS ( docker )
+Elastic Container Service
+Private ( amazons ) repo for docker images
+
+** Docker Contaners Mangement systems
+1) ECS ( amazon )
+2) Fargate ( amazon serverless )
+3) EKS ( amazon's kubernetes )
+
+** ECS config
+/etc/ecs/ecs.config --> put your cluster name there
+
+** ECS Clusters
+Logical grouping of EC2 instances:
+
+EC2 runs special AMI which in turn runs ECS agent ( Docker container )
+ECS agent registers the instance to the ECS cluster
+
+** ECS Task Definitions
+Metadata in JSON format 
+Tells ECS how to run Docker Container
+You have to provide TASK ROLE ( if container can't do something, it's probably because it doesn't have a task role)
+
+** Dynamic host port mapping 
+Available only with Application Load Balancer ( Classic LB can't do it )
+It automatically pics up 'random' ports spinned up by the docker images, and map them.
+If you want to run multiple containers ( of the same type ) on the same EC2 instance, YOU CANNOT SET HOST PORT MANUALLY ( set only container port )
+
+** ECR
+Elastic Container Registry 
+Amazon's repository for docker images
+
+*** Push commands
+1) log in to ECR ( cli )
+
+//LINUX/MAC
+$(aws ecr get-login --no-include-email --region eu-west-1)
+//WINDOWS
+Invoke-Expression -Command (Get-ECRLoginCommand -Region eu-west-1).Command
+
+---
+//build
+docker build -t <name> .
+//tag ( rename image )
+docker tag <name>:latest 489210310983.dkr.ecr.eu-west-1.amazonaws.com/<name>:latest
+//push
+docker push 489210310983.dkr.ecr.eu-west-1.amazonaws.com/<name>:latest
+
+//pull
+1) login 
+2) docker pull aws uri of the docker image
+
+** Fargate
+( Serverless )
+We don't have to provision EC2 anymore
