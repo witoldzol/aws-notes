@@ -1326,3 +1326,65 @@ MAX size: 237 GB
 You can override cache for specific methods
 You can flush whole cashe from console
 Client with proper IAM authorization CAN FLUSH CASH ( header: Cache-Control: max-age=0)
+** Logging
+You can enable CloudWatch at stage level
+Metric are also available as well as Access Logging
+You can integrate XRAY as well 
+** CORS 
+must be enabled if you receive calls from different domain
+OPTIONS pre-flight request must contain headers:
+- Access-Control-Allow-Methods
+- Access-Control-Allow-Headers
+- Access-Control-Allow-Origin
+CORS can be enabled from console
+** Usage plan
+You can limit number of calls and throttle traffic ( capacity and burst capacity )
+You can limit total number of requests pay day etc 
+You can associate limits with stages
+Generate API keys: 
+One key per customer
+Associate API with stages
+** Security
+*** IAM Permissions
+For users / roles alrady within my AWS account
+AUTH and AUTHORIZATION
+Uses SIG v4
+Client passes sig v4 in HEADER
+API Gateway checks the sig v4 with IAM, and if all ok, allows request to propagate
+No added cost
+*** Lambda Authorizers ( Custom authorized - old name )
+Good for 3rd party tokens
+Flexible with what IAM to return
+AUTHENTICATION & AUTHORIZATION
+Pay per lambda call
+Uses Lambda to verify token passed by client in HEADER of the request
+You can CACHE the result of authorization
+Good for 3rd party authorization ( OAuth, SAML )
+Lambda must return IAM policy for the user
+*** Cognito User Pool
+You manage your own user pool ( can be backed by Facebook, Google etc )
+Cognito manager full user life-cycle
+API Gateway verifies identity automatically from Cognito
+No custom implementation required ( all automated and FREE )
+FOR IDENTIFICATION NOT AUTHORIZATION !!!! Yes, he is who he says he is, but I don't know if he can access this resource
+
+User calls Cognito, gets token
+Passes token in header of request
+Gateway takes token and checks against Cognito
+
+YOU MUST IMPLEMENT YOUR OWN AUTHORIZATION LAYER IN THE BACK END on your own ( cognito will not handle it for you )
+** Cognito 
+*** User Pools ( CUP )
+Serverless database for users of your app ( login & passwords )
+Simple login functionality
+Can verify emails, handles MFA
+Can handle Federated Identities ( Facebook, Google, SAML)
+Sends back Jason Web Token ( JWT )
+Can be integrated with Gateway for authentication 
+
+*** Identity Pools
+Provides DIRECT access from CLIENT side ( no proxies, no nothing, straight through )
+
+*** Sync ( App Sync replaced it? )
+
+
