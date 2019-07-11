@@ -503,6 +503,36 @@ eb health
 eb open
 ...
 **** helpful for automated deployment pipelines
+*** Exam tips !important
+**** Can work with https
+Load SSL cert on to the Load Balancer
+- use console ( eb console -> load balancer configuraton )
+- OR use code: -> .ebextensions/securelistener-alb.config
+SSL Cert can be provisioned using ACM ( aws certificate manager) or CLI
+- configure security group ( allow 443 -- https )
+**** How to redirect HTTP -> HTTPS
+1) configure your instances to redirect
+OR
+2) configure the Application Load Balancer (alb ONLY!) with a rule 
+DO NOT REDIRECT HEALTH CHECKS ( or you will not get 200 ) 
+**** Lifecycle Policy
+Can store up to 1000 application versions
+Use lifecycle policy to phase out old versions:
+- based on time
+- based on space
+- used versions are not deleted
+- option NOT to delete underlying S3 ( so you can recover data )
+**** RDS in beanstalk
+Database is tied to environment -- it will get deleted if you remove env
+For PROD use separate DB and provide connection STRING to EB
+You can migrate coupled DB from EB to standalone RDS:
+1) Take RDS DB snapshot
+2) enable deletion protection in RDS
+3) create new env in EB without RDS --> point env to OLD RDS
+4) perform blue / green deployment and swap new and old environments
+5) terminate old env ( rds wont get deleted bcs of protection setting )
+6) delete cloud formation stack
+
 * =========
 * CI CD
 ** CodeCommit
@@ -1512,3 +1542,5 @@ Simple Email service
 ** Redshift: OLAP - analytic processing ( data warehouseing )
 ** Neptune: Graph database
 ** DMS: Database Migration Service
+* ACM
+Amazon Certificate Manager
