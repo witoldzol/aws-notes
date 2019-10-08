@@ -472,6 +472,8 @@ Redirect a bit of traffic using Route 53 to new environment ( weighted policy )
 When all is ok
 DNS changed when all is ok
 Takes long time to deploy
+YOU NEED TO USE Autoscaling group (you could provision instances manually, but thats crazy-don't)
+YOU NEED TO USE Load Balancer 
 *** Updating 
 New code has to be ZIPped
 All params can be set up within code
