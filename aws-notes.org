@@ -396,6 +396,27 @@ You may have AWS limit for KMS usage ( 100s - 1000s download/upload per second)
 #+BEGIN_SRC bash
   aws s3 ls s3://bucket_name
 #+END_SRC
+** CodeDeploy
+*** install agent
+#+BEGIN_SRC bash
+#!/bin/bash
+yum -y update
+yum install -y ruby
+yum install -y aws-cli
+cd /home/ec2-user
+aws s3 cp s3://aws-codedeploy-us-east-2/latest/install . --region us-east-2
+chmod +x ./install
+./install auto
+#+END_SRC
+*** start agent
+#+BEGIN_SRC bash
+sudo service codedeploy-agent start
+#+END_SRC
+*** check if codedeploy agent is running
+#+BEGIN_SRC bash
+  sudo service codedeploy-agent status
+  # error: No AWS CodeDeploy agent running
+#+END_SRC
 * Commands
 //configure cli
 aws configure  //afterwards put in both your keys in
