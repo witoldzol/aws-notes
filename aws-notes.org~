@@ -1303,8 +1303,6 @@ real time streaming model
 Streams big data
 Great for IoT, logs, metrics etc
 Data automatically replicated to 3 Availability Zones
-*** iterator
-You need stream iterator in order to retrieve data
 *** Kinesis Streams !important
 Low latency streaming at scale
 Divided into ordered SHARDS / partitions
