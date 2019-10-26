@@ -1,100 +1,8 @@
-
-;; Fundamentals
-* Need to know
-** EC2
-*** how to ssh into ec2
-*** how to change .pem permissions (chmod)
-gives a permission error exception if you can't access .pem
-*** how to use security groups
-*** differences between private/public/elastic IP
-*** how to use User Data at boot time
-*** know that you can use custom AMI
-*** instances are billed per second
-* Linux commands
-** install
-yum install
-** switch to root
-sudo su
-* Regions
-** All regions are scoped
-Except for IAM and s3
+* ACM
+Amazon Certificate Manager
 * AMI
 Amazon Machine Image
 They are region locked, cannot be seen from outside a region
-* IAM
-Identity and Access Management
-It's global ( not locked to a zone / region )
-* SECURITY
-Never use root account ( except when first setting up )
-*** Users
-Physical person
-*** Groups
-Functions ( admins )
-*** Roles
-For machines
-*** Policies
-Govern permissions
-Define what each above groups can do
-*** Leas privilege principle
-Give minimal permissions to users they need to get job done
-*** Permissions
-**** 0644 <key_name> are too open
-chmod 0400 <key_name> (changes permissions to -r-----) (only owner can read)
-*** Security groups
-Act like firewall and block all Inboud / Outbound traffic that is not greenlit
-Can be attached to multiple instances ( vm's )
-Instance can have mutliple groups
-They work only within their region ( if you switch region, you have to recreate groups )
-They 'live' outside EC2 - they don't run on instances
-Defaults: all inbound is blocked and all outbound is allowed
-You can reference other security groups / CIDR blocks / IP addresses
-You CANNOT reference DNS names
-* EC2
-Elastic compute cloud
-** Cannot see IP of customer going through load balancer
-Can only see private IP of ALB, in order to get IP of client
-check the header 'X-Forwarded-For'
-to check the port check 'X-Forwarded-Port'
-** Custom AMI
-Customers can spin up their own versions of OS
-with custom setup/software/access etc
-** T2 Instances
-They are burstable :
-they have 'cpu credits', and under unexpected load
-they can perform very well, unless they run out of cpu creds
-** User Data
-Used to run commands when the instance starts up
-Commands run with 'sudo'
-Every bash script has to start with
-#+BEGIN_CENTER bash
-   #!/bin/bash
-#+END_CENTER
-** shh into machine
-ssh -i <key-file.pem> ec2-user@ip-address
-** shh on windows
-use PUTTY to ssh into it
-** Launch Types
-*** On demand
-short workload, predictable pricing
-*** Reserved Instances
-long workloads ( 1+ year )
-*** Convertible Reserved Instances
-long workloads with flexi instances
-*** Scheduled Reserved Instances
-launch within reserved time window
-*** Spot Instances
-short workloads, cheap, can loose instances!
-*** Dedicated Instances
-no other customer will share hardware
-*** Dedicated Hosts
-book entire server
-** Pricing
-Depends on:
--region
--instance type
--on demand / reserved / dedicated / spot
--type of OS
--billed per second, with min of 60
 * Apache
 ** install apache
 yum install httpd.x86_64
@@ -102,38 +10,119 @@ yum install httpd.x86_64
 ** run & enable apache
 systemctl start httpd.service
 systemctl enable httpd.service
-* Load Balancers
-** Can scale but need to 'warm up'
-** CLB/ALB/NLB has a static host name
-Do not resolve and use underlying IP
-** Provide SSL certs & SSL termination (Classic and ALB)
-** Types
-v1 balancer ( classic )
-v2 application / network balancer
-** Health checks ( available to all ALB )
-ELB can perform health check on instance
-Done on PORT & ROUTE ( /health )
-** Application Load Balancer (v2)
-Layer 7
-Can route based on hostname / path
-Great fit with ECS (Docker)
-Can handle/serve multiple groups/apps
-Can implement 'stickiness' and direct same user to the same group ( ALB will generate cookie, not your application !)
-Supports HTTP/HTTPS & Websockets protocols
-APPLICATIONS dont see IP of clients directly! ( Ip is placed in header 'X-Forwarded-For)
-** Network Load Balancer (v2)
-Layer 4
-Forwards TCP traffic
-** CLB/ALB cannot see client IP directly
-NLB can see IP directly
-Ip is stored in 'X-Forwarded-For' header (for alb/clb)
-** 4xx errors
-Client induced error
-** 5xx errors
-Application/Server side errors
-** If unable to connect to application..
-Check security groups!
-* ASG
+* API GATEWAY
+Lambda + API = no infrastructure to manage
+Handles api versioning
+Allows multiple environments
+Handles security ( auth & authent )
+Handles throttling
+Genereate SDK & api specs
+Cache API responses
+Creates API keys
+
+** Integrations
+*** Outside VPC
+- Lambda
+- EC2
+- Load Balancers
+- ANY AWS service
+- External HTTP endpoints
+*** Inside VPC
+- Lambda
+- EC2
+** Stage Deployments
+*** Stage Variables
+Act like env vars in API Gateway ( can change code behaviour )
+Use to change configiguration values
+Use to define HTTP endpoints your STAGES talk to ( dev, test, prod )
+Pass configuration params
+Stage vars are passed to the CONTEX object in Lambda
+Stage vars help define what the code does, and where it points
+*** Canary deployment
+Redirect % of traffic to updated API to test it
+Used mostly for prod
+Metrics & logs are separate for each version of api being tested
+Like blue / green deployment in Lambda
+** Mapping Templates !important
+Used to modify requests
+Rename params
+Add headers
+We can use VLT ( velocity template language )
+** Swagger
+Documents API
+Can be written in JSON or YAML
+You can export current API as Swagger / OPENAPI
+** Cache
+DEFAULT live : 300 seconds ( 5 MIN )
+MIN 0, MAX: 3600 seconds ( 1h )
+Cache is defined per STAGE ( so dev can have different cache then prod )
+Cache can be encrypted
+MIN size: 0.5 GB
+MAX size: 237 GB
+You can override cache for specific methods
+You can flush whole cashe from console
+Client with proper IAM authorization CAN FLUSH CASH ( header: Cache-Control: max-age=0)
+** Logging
+You can enable CloudWatch at stage level
+Metric are also available as well as Access Logging
+You can integrate XRAY as well
+** CORS
+must be enabled if you receive calls from different domain
+OPTIONS pre-flight request must contain headers:
+- Access-Control-Allow-Methods
+- Access-Control-Allow-Headers
+- Access-Control-Allow-Origin
+CORS can be enabled from console
+** Usage plan
+You can limit number of calls and throttle traffic ( capacity and burst capacity )
+You can limit total number of requests pay day etc
+You can associate limits with stages
+Generate API keys:
+One key per customer
+Associate API with stages
+** Security
+*** IAM Permissions
+For users / roles alrady within my AWS account
+AUTH and AUTHORIZATION
+Uses SIG v4
+Client passes sig v4 in HEADER
+API Gateway checks the sig v4 with IAM, and if all ok, allows request to propagate
+No added cost
+*** Lambda Authorizers ( Custom authorized - old name )
+Good for 3rd party tokens
+Flexible with what IAM to return
+AUTHENTICATION & AUTHORIZATION
+Pay per lambda call
+Uses Lambda to verify token passed by client in HEADER of the request
+You can CACHE the result of authorization
+Good for 3rd party authorization ( OAuth, SAML )
+Lambda must return IAM policy for the user
+*** Cognito User Pool
+You manage your own user pool ( can be backed by Facebook, Google etc )
+Cognito manager full user life-cycle
+API Gateway verifies identity automatically from Cognito
+No custom implementation required ( all automated and FREE )
+FOR IDENTIFICATION NOT AUTHORIZATION !!!! Yes, he is who he says he is, but I don't know if he can access this resource
+
+User calls Cognito, gets token
+Passes token in header of request
+Gateway takes token and checks against Cognito
+
+YOU MUST IMPLEMENT YOUR OWN AUTHORIZATION LAYER IN THE BACK END on your own ( cognito will not handle it for you )
+** Cognito
+*** User Pools ( CUP )
+Serverless database for users of your app ( login & passwords )
+Simple login functionality
+Can verify emails, handles MFA
+Can handle Federated Identities ( Facebook, Google, SAML)
+Sends back Jason Web Token ( JWT )
+Can be integrated with Gateway for authentication
+
+*** Identity Pools
+Provides DIRECT access from CLIENT side ( no proxies, no nothing, straight through )
+
+*** Sync ( App Sync replaced it? )
+* ASG Auto Scaling Groups
 Auto Scaling Groups
 Free!
 Can scale based on CloudWatch alarms
@@ -145,291 +134,6 @@ CPU
 Network
 Custom
 On schedule!
-* EBS Volume
-Network drives
-Only one EBS can be attached/detached to EC2's
-Locked to Availability Zone eg: us-east-1a != us-east-1b
-You can move SNAPSHOTS of it
-EBS backups use IO so don't perform them when application is busy
-Root EBS gets terminated with the instance ( can be turned off )
-Get charged by provisioned size, not used one
-You can resize volumes
-** EBS encryption !important
-Data at rest is encrypted inside the volume
-Data moving between instance & volume is encrypted
-Snapshots created from this volume are encrypted
-** Snapshots
-Snapshots take actual size not the whole provision of EBS
-Used for backups
-When you want to resize a volume down
-Change volume type
-Encrypt volume
-** Instance stores
-Physically attached to the machine
-Better I/O performance
-On termination of instance, data is lost
-Cant resize
-Backups must be operated by user
-* EFS
-Elastic File System
-Storage capacity is ELASTIC ( increases / decreases with use )
-Fully managed service
-Big Data & Analytics
-Media processing workflows
-Content Management
-Can be connected to multiple EC2
-Can be used by on-premises servers ( good for migration )
-* Route 53
-Use Alias over CNAME
-Managed DNS ( collection of records )
-DNS records get cached by browsers ( saved locally )
-** Records:
-*** A:
-url to ipv4
-*** AAAA:
-url to ipv6
-*** CNAME
-url to url
-*** Alias
-url to AWS resource
-** Features:
-Load balancing
-Health checks
-Routing policy ( geolocation, proximity, latency, weighted, simple)
-* RDS
-Relational Database Services
-** Replicas
-Applications MUST update the connection string to leverage read replicas!!
-Used for READ scaling !
-DB can have up to 5 replicas within & across AZ or regions
-Replication is ASYNC !
-Replicas can be promoted to their own DB
-Master has 'write/read', replicas only 'reads'
-** Disaster recovery
-No need to UPDATE connection string ( so the failover is seemless )
-One DNS can be set to 'standby'
-Increases availability
-Failover in case of disaster ( replication is SYNC )
-No manual intervention
-Not used for scaling (standby doesn't have read writes)
-** Backups
-Automatically enabled
-Daily snapshot
-Transaction logs saved for 7 days (35max)
-DB snapshots can be user triggered ( retained for as long as you want)
-** Security
-*** Access
-RDS DB's are deployed within private subnet ( not a public one )
-Uses security groups ( to control who can COMMUNICATE with RDS )
-Uses IAM policies to control who can MANAGE
-Username / password for LOGIN to DB ( IAM users can be used - Postgre / Aurora)
-*** Encription
-Encription at REST with AWS KMS - AES-256 encription
-You can use SSL certs to encrypt data to RDS in FLIGHT
-Encryption can be enable only when CREATING database
-Read replicas have to be encrypted / unencrypted if master is enc / unc
-You can encrypt a snapshot of a unencrypted db and encrypt that ...
-You CANNOT disable encryption once its enabled
-*** Enforce SLL ! ( important )
-**** PostgreSQL
-rds.force_ssl=1 (in the AWS RDS Console - Parameter Groups)
-**** MySQL
-GRANT USAGE ON *.* TO 'mysqluser'@'%' REQUIRE SLL;
-*** Connect using SLL
-Provide SLL Trust cert ( can be downloaded from AWS )
-Provide SLL options when connection to DB
-*** Aurora
-Compatibile with postre & mysql
-'Cloud optimized'
-Automatically grows in increments of 10GB up to 64TB
-Can have up to 15 replicas
-Replication is faster
-Failover is instantaneous
-HA native ( high availability native )
-More expensive but also more efficient
-* ElastiCache
-In memory version of RDS ( Redis / Memcached )
-Has Read & Write scaling ( Replicas / Sharding )
-Multi AZ with failover
-Can be encrypted at rest & in-transit
-* VPC
-Virtual Private Cloud
-Tied to a region
-Each VPC contains subnets ( networks )
-Each subnet must be mapped to AZ
-Public & Private subnets CAN communicate if they are in the same VPC
-5 vpc's MAX per region
-5 internet gateways per region
-50 customer gateways per region
-50 VPN connection per region
-200 rout tables per region / each 50 entries
-5 elastic ip's per region
-500 security groups per VPC
-50 rules per security group
-LIMITS CAN BE EXTENDED - contact aws
-Spans ALL availability zones
-** Subnets
-Subnet exists in ONE availability zone ( cannot span 2+ )
-Must be associate with route table ( explicitly or implicitly - main )
-** Public subnets ( available to public ):
-ASSOCIATED WITH ROUTE TABLE THAT HAS INTERNET GATEWAY ATTACHED
-Load balancers
-Static websites
-Files
-Public authentication layers
-** Private subnets
-Web app servers
-Databases
-** Network Access Control Lists (ACLs)
-Like a firewall on SUBNET level
-They are STATELESS ( if I allow SSH in...I have to explicitly set rule to let it OUT )
-** Security Groups
-They are STATEFULL ( if I allow SSH in...it will be able to get OUT )
-On resource/instance level
-No DENY rules...only ALLOW - all else is blocked by default
-** Bastion Host
-EC2 instance
-Lives in public subnet
-Used as a 'gateway' for instances that live in PRIVATE subnets
-Can be used to ssh into private resources on private subnets ( without VPN )
-** NAT Gateway
-Allows access to internet to resources that live in private subnets
-Used for updating / patching
-One way traffic - traffic can enter only if it originated from PRIVATE subnet
-MUST be in public subnet
-MUST be part of the private subnet rout table
-
-
-* S3
-Simple Storage Service
-No directories ( just keys )
-** Buckets
-Defined @ regional level BUT must have UNIQUE name GLOBALLY !
-*** Naming convention:
-- No uppercase
-- No underscore
-- 3 to 63 chars
-- not an IP
-- starts with letter or number
-** Objects
-They have a key
-*** Key
-Its a FULL path to an Object(file)
-<my_bucket>/my_file.txt
-*** Values
-Content of the body of object
-Max size is 5TB
-If file > 5GB must use 'multi-part upload' !important
-*** Metadata
-List of text key / value pairs ( sys or user metadata )
-*** Tags
-Useful for security / lifecycle
-** Versioning
-Enabled at bucket level
-File before we turn on versioning will have version 'null' !important
-Deleting versined file doesn't remove it, just puts 'delete marker' on it
-** Encryption !important
-4 Methods:
-*** SSE-S3
-Keys managed by AWS S3
-Key name: "S3 Managed Data Key"
-Objects encrypted server side
-Encryption: AES-256
-When sending data to S3: set header: "x-amz-server-side-encryption":"AES256"
-*** SSE-KMS
-Key Managed Service
-Keys managed by Key Management Service
-Key is called: "Customer Master Key" ( CMK )
-KMS gives you more control over keys and audit trail
-Server side encryption
-When sending data to S3: set header: "x-amz-server-side-encryption":"aws:kms"
-*** SSE-C
-Keys managed by YOU outside of AWS ( not stored by amazon)
-HTTPS must be used
-How to:
-Generate client side data key
-Using Https send DATA key in header
-Amazon encrypts object using key, and then discards the key
-*** Client Side Encryption
-Use client library such as Amazon S3 Encryption Client
-Client must encrypt when sending & receiving to S3
-Client fully manages keys & encryptin cycle
-How to:
-Generate data key
-Encrypt object using key ( on client side )
-Send encrypted object to S3 ( http/s )
-*** Encryption in transit
-Also called SSL / TLS
-HTTP endpoint: not encrypted
-HTTPS endpoint: encryption in flight ( mandatory for SSE-C )
-** Security
-*** User based
-IAM policies - which API calls should be allowed for a specific user
-*** Resource based (more popular)
-Bucket policies - bucket wide policy from S3 console ( allows cross account )
-Use S3 policy to:
-- Grant public access to bucket
-- Force object to be encrypted on upload
-- Grant access to another account ( Cross Account )
-JSON based policies:
-**** Resources: buckets and objects
-**** Actions: Set of API to Allow or Deny
-**** Effect: Allow / Deny
-**** Principal: the account/user to apply policy to
-
-
-*** Object Access Control List (ACL) !ignore
-*** Bucket Access Control List !ignore
-** Networking
-S3 supports VPC Endpoints ( for instances in VPC without www internet )
-** Logging and Audit
-S3 access logs can be stored in other S3 bucket ( not the same - or you will have endless loop)
-API calls can be logged in AWS CloudTrail
-** User Security
-MFA ( multi factor authentication ) can be enabled for file deletetion
-Signed URLs: valid only for a limited time
-** S3 Websites
-<bucket-name>.s3-website-<AWS-region>.amazonaws.com
-<bucket-name>.s3-website.<AWS-region>.amazonaws.com
-403 error --- > check bucket policy, does it allows public reads?!
-** CORS
-In order to share files from different bucket, that bucket needs to have a CORS enabled
-and configured correctly
-** Consistency Model
-EVENTUAL CONSISTENCY !important
-shit takes a while to update
-
-for example, you try GET on resource and get 404 response
-404 gets cached
-you PUT the resource and try GET again
-you will get 404 AGAIN because, 404 from first try was cached
-it will take some time before resource will be available
-
-Another example:
-DELETE 200 -> GET 200
-After deleting a resource, you might still be able to GET it for a short while
-EVENTUAL CONSISTENCY RULE
-** Performance !important
-*** If you have > 100 TPS performance might degrade
-For best performance you want your objects distributed between different partitions
-PUT 4 RANDOM CHARS in front of your KEY NAME to optimise performance !important
-
-<my_bucket>/6ad7_myfolder/my_file1.txt
-<my_bucket>/a37f_myfolder/my_file2.txt
-
-(you don't have to do this anymore, but exam wasn't updated)
-
-*** For files > 5GB use MULTIPART UPLOAD
-
-*** If you want to do A LOT of reads, use CLOUDFRONT (caches S3 objects)
-
-*** If you want to UPLOAD a lot, use S3 Transfer Acceleration
-It uses edge locations
-
-*** SSE-KMS Encryption can lower performance
-You may have AWS limit for KMS usage ( 100s - 1000s download/upload per second)
-
-* =========
 * CLI
 ** S3
 *** copy to s3
@@ -465,383 +169,6 @@ sudo service codedeploy-agent start
   sudo service codedeploy-agent status
   # error: No AWS CodeDeploy agent running
 #+END_SRC
-* Commands
-//configure cli
-aws configure  //afterwards put in both your keys in
-//list buckets
-aws s3 ls s3://bucketofwitold
-//copy from bucket to bucket
-aws s3 cp s3://bucketofwitold/dog.jpg s3://mysecondbucketwitold
-//make bucket
-aws s3 mb s3://bucket-name-unique
-//remove bucket
-aws s3 rb s3://bucket-name-unique
-//create t2 instance
-aws ec2 run-instances --image-id ami-030dbca661d402413 --instance-type t2.micro
-//test command flag ( will not run )
---dry-run
-* EC2
-NEVER PUT YOUR CREDENTIALS on EC2!!!
-Use IAM Roles to give credentials to EC2
-EC2 can have only 1 ROLE at a time
-You can have as many roles as you want...just one can be used per given instance!
-Each role can have multiple permissions
-* EC2 Metadata
-Information about ec2 instance
-DONT FORGET TRAILING SLASH!
-http://169.254.169.254/latest/meta-data/
-
-//get temporary credentials
-curl http://169.254.169.254/latest/meta-data/iam/security-credentials/EC2_rolecurl http://169.254.169.254/latest/meta-daa/iam/security-credentials/EC2_role
-* STS command line
-Security Token Service
-aws sts decode-authorization-message --encoded-message
-* SDK
-** default credentials provider chain
-to authorize sdk  you can use:
-- aws credentials on your local computer
-- instance profile credentials using AIM Roles (on EC2 machine etc)
-- environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
-** Exponential backoff
-Included in SDK
-For rate limited api's
-Each retry will take x2 of the previous delay before trying again
-* =========
-* ELASTIC BEANSTALK
-Relies on CLOUD FORMATION under the hood
-*** 3 Components
-**** Application
-**** Application version
-**** Environment name (dev, test, prod)
-*** Deployment modes
-**** Single instance
-Good for development
-1 instance + security group + elastic IP + auto scaling group in one AZ
-**** High Availability with Load Balancer
-Good for prod
-Elastic load balancer talk to ASG ( auto scale group )
-Multi instances auto scaled, across multi AZ, load balancer
-*** Update modes
-**** All at once
-Fastest,
-instances will be temporarily out ( there will be downtime )
-No cost
-**** Rolling
-Updates backet (N number of instances @ one time to be updated) at a time
-Moves to next bucket when the updated one is healthy
-Can take long time if many instances
-No cost
-Runs below capacity
-**** Rolling with additional batches
-Spins up a batch to serve all content while the bucket is being updated ( no hit to performance )
-Additional cost (extra instances spinned up to cover downed instances )
-No downtime
-Runs at capacity
-**** Immutable
-Spin up new instances running updated app, in new ASG.
-Swap for old one when all is healthy
-Longest deployment time
-Great for prod
-Double capacity at a time
-No downtime
-High extra cost
-**** Blue / Green
-Deploy new environment
-Spin up 100 % extra instances with new code
-Redirect a bit of traffic using Route 53 to new environment ( weighted policy )
-When all is ok
-DNS changed when all is ok
-Takes long time to deploy
-YOU NEED TO USE Autoscaling group (you could provision instances manually, but thats crazy-don't)
-YOU NEED TO USE Load Balancer
-*** Updating
-New code has to be ZIPped
-All params can be set up within code
-Files have to be in a folder called, in the ROOT level of the application
-File format: YAML / JSON
-Files must end with: .config extension
-You can change default settings using OPTION_SETTINGS parameter
-You can additional resources using those options
-#+BEGIN_SRC
-.ebextensions/
-#+END_SRC
-IF YOU DELETE environment, you will loose all .ebextension resources associated with it ( also RBS )
-*** Optimization
-This is how the process looks like:
-1) Describe dependencies ( eg. package.json )
-2) Package zip with source code
-3) Upload zip to EC2
-4) Resolve / download dependencies on each EC2
-
-Last step takes the longes ( if lots of deps )
-
-TO INCREASE SPEED, PACKAGE DEPENDENCIES WITH SOURCE CODE
-*** CLI
-**** commands
-eb deploy
-eb create
-eb status
-eb health
-eb open
-...
-**** helpful for automated deployment pipelines
-*** Exam tips !important
-**** Can work with https
-Load SSL cert on to the Load Balancer
-- use console ( eb console -> load balancer configuraton )
-- OR use code: -> .ebextensions/securelistener-alb.config
-SSL Cert can be provisioned using ACM ( aws certificate manager) or CLI
-- configure security group ( allow 443 -- https )
-**** How to redirect HTTP -> HTTPS
-1) configure your instances to redirect
-OR
-2) configure the Application Load Balancer (alb ONLY!) with a rule
-DO NOT REDIRECT HEALTH CHECKS ( or you will not get 200 )
-**** Lifecycle Policy
-Can store up to 1000 application versions
-Use lifecycle policy to phase out old versions:
-- based on time
-- based on space
-- used versions are not deleted
-- option NOT to delete underlying S3 ( so you can recover data )
-**** RDS in beanstalk
-Database is tied to environment -- it will get deleted if you remove env
-For PROD use separate DB and provide connection STRING to EB
-You can migrate coupled DB from EB to standalone RDS:
-1) Take RDS DB snapshot
-2) enable deletion protection in RDS
-3) create new env in EB without RDS --> point env to OLD RDS
-4) perform blue / green deployment and swap new and old environments
-5) terminate old env ( rds wont get deleted bcs of protection setting )
-6) delete cloud formation stack
-
-* =========
-* CI CD
-** CodeCommit
-Version control
-Private Git repository
-No size limit
-Fully managed, highly available
-Cody stays in AWS Cloud account ( security )
-Secure ( encryption , access control etc )
-Integreated with CI tools ( CodeBuild, Jenkins etc )
-*** Requirements
-You must have
-- 1.7.9 github version to use CodeCommit
-- IAM policy & user for accessing AWS CodeCommit OR belong to CODESTAR project team
-
-** CodeCommit Security
-Interaction used with Git commands
-*** Authentication: ( you are who you say you are )
--HTTPS (use AWS CLI Authentication or generate HTTPS credentials )
--SSL Keys (configure keys via AIM Console)
--MFA ( multi factor )
-*** Authorization: ( you have access to do stuff )
-IAM Policies manage user / roles access to repos
-*** Encryption
-REST: Repos are encrypted automatically using KMS
-TRANSIT: https or ssl
-*** Cross Account Access
-Use IAM Role and AWS STS ( AssumeRole API )
-DO NOT SHARE SSH / AWS credentials EVER!
-*** CodeCommit vs GitHub
-**** Similar
-Both are git repos
-Support code reviews ( Pull Requests )
-Can be integrated with CodeBuild
-Support HTTPS and SSH for authentication
-**** Differences
-***** Security
-Github is administered using GITHUB USERS
-CodeCommit uses IAM roles & users
-***** Hosted
-GitHub is 3rd party
-CodeCommit is manages & hosted by AWS
-***** Notifications
-: every time someone commits code, we can trigger events / background checks
-: for example, lambda can check if there are any credentials in the code ...
-CodeCommit can be integrated with
-- AWS SNS ( Simple Notification Service )
-- AWS Lambda
-- AWS CloudWatch Event Rules
-*** Notification
-Use cases:
-**** SNS / Lambda
-1) Push to existing branch
-2) Create branch
-3) Delete branch
-4) Trigger Lambda OR SNS
-**** CloudWatch Rules
-1) Trigger for Pull Requests ( create / update / delete / comment )
-2) Commit comments events
-3) CloudWatch Event Rules goes into an SNS topic ( sns - simple notification service)
-4) CloudWatch will send email notification
-* CodePipeline
-Each stage generates 'artifacts' that are stored in S3 bucket ( and passed from there to next stage )
-Each change in state generates CloudWatch Events which in turn can create SNS notification ( you can create events for failed pipelines )
-On failure at any stage, pipeline stops
-You can use AWS CloudTrail to audit API calls
-If pipeline fails stage check if it has necessary permissions "IAM Service Role" (check attached policies)
-When created CodePipeline creates CloudWatch Event rule that will trigger ( on commit or can check periodically )
-** You can use Lambda as Custom Action jobs
-Action jobs can run in pararel or/and sequentially
-Lambda will use PutJobSuccessResult / PutJobFailureResult API call when its over
-It will use continuation token ( passes it in with the API call )
-** Continuation token
-Generated by job worker
-* CodeBuild
-Fully managed build service
-Continuous scaling ( no build queue,build server to manage etc ...  unlike Jenkins )
-Pay for usage ( the time used to build )
-Uses docker ( you can use your own docker images )
-Build instructions CAN be defined in code ( in BUILDSPEC.YML file) !important
-Output logs ===> S3 & CloudWatch
-Use CloudWatch to trigger notifications ( and detect failed builds etc)
-Use Lambda as Glue
-Use SNS notifications
-You can reproduce build locally to troubleshoot
-You can use docker to extend any environment you like ( eg. Huskel ) - its fully extensible because of it
-You can use S3 Cache Bucket to cache build dependencies ( if you say are doing multiple builds etc )
-** When build finishes / fails ===> CONTAINER GETS DELETED!
-** Code source
-Github
-CodeCommit
-CodePipeline
-S3
-...
-** Integrations
-KMS for encription
-IAM for build permissions
-VPC for network security
-CloudTrail for API calls tracing
-** buildspec.yml
-Must be at the ROOT of the code
-Contains variables ( plaintext or SSM param store )
-*** Phases
-Install : gets dependencies
-Pre-build : final commands before build
-Build : actual build commands
-Post build : finishing touches ( zipping files )
-Upload artifacts to S3
-Cache files to S3 ( usually dependencies )
-*** Local build ( for troubleshooting )
-Uses CodeBuild Agent
-* CodeDeploy
-Each EC2 ( or On Premise machine ) MUST run CodeDeploy Agent
-Agent keeps asking CodeDeploy for work
-CodeDeploy points at APPSPEC.YML !important
-Application is pulled from GitHub / S3
-EC2 runs deployment instructions
-CodeDeploy agent reports success / failure of the deployment
-
-EC2 instances are grouped by deployment group ( dev / qa / prod )
-CodeDeploy can be chained into CodePipeline and use artifacts from there
-CodeDeploy can reuse tools , autoscaling integrations, other apps
-Blue / Green works with EC2 instances ( but not with ON PREM )
-CodeDeploy supports AWS Lambdas
-CodeDeploy DOES NOT provision resources ( EC2 instances are assumed to already exist! )
-** appspec.yml !important
-IN ROOT FOLDER !
-*** file section
-how to source & copy files from S3 / GitHub
-*** hooks ( can have timeouts )
-Not all of them have to be defined
-deployment instructions
-**** ECS hooks
-ECS Hooks:
-
-Start, Install, TestTraffic, AllowTraffic and End – NO SCRIPTS AT THOSE STAGES
-
-Start
-BeforeInstall
-Install
-AfterINstall
-AllowTestTraffic
-AfterAllowTestTraffic
-BeforeAllowTraffic
-AllowTraffic
-AfterAllowTraffic
-End
-**** Lambda hooks
-LAMBDA HOOKS:
-Cant script: Start, AllowTraffic, End
-
-Start
-BeforeAllowTraffic
-AllowTraffic
-AfterAllowTraffic
-End
-**** EC2 hooks
-they CAN HAVE ALL OF THE stages
-
-*** deplyment config
-One at a time: fail if any but last fails
-Half at a time: fails if more than half fails
-All at once ( quickest but with downtime - good for dev )
-Custom ( eg 75% )
-*** failure
-If deploy fails, instance STAYS in fail state
-New deploy starts with failed instances
-To rollback : redeploy previous version OR enable automatic rollback for failures
-*** deployemnt target
-EC2 instances with tags
-AutoScalingGroup (ASG)
-Mix of above
-DEPLOYMENT_GROUP_NAME variable for extra config
-*** permissions that have to be set up
-2 roles:
-- For CodeDeploy ( AWS CodeDeploy policy )
-- For EC2 ( access to S3 -- read only )
-*** HOW TO SET UP DEPLOYMENT
-1) Make sure you have EC2 instances / In place instances
-2) Give IAM role to EC2 instances ( to access data where source code will be )
-3) Install DeploymentAgent on EC2 instances
-4) Put a tag on EC2 instances
-
-5) Give role CodeDeploy
-6) Set up CodeDeploy groups
-7) Make sure APPSPEC.YML is defined in ROOT of the source code
-** install code agent
-#+BEGIN_SRC bash
-  sudo yum update -y
-  sudo yum install -y ruby wget
-  wget https://aws-codedeploy-eu-west-1.s3.eu-west-1.amazonaws.com/latest/install
-  chmod +x ./install
-  sudo ./install auto
-  sudo service codedeploy-agent status
-#+END_SRC
-* OpsWorks
-** Lifecycle events
-*** Setup: once the instance boots up, initial installation of package
-*** Configure [events]: events are executed when:
-- instance goes online
-- OR offline
-- OR attach/detach ELB
-- OR associate/disassociate EIP of the instance
-Configure runs on ALL instances at the same time ( except for the newly attached one ?)
-*** Deploy: for manual deployment of new app
-*** Undeploy: remove the app from the set of application servers
-*** Shutdown: shut down instance BEFORE its terminated ( ex: deregister from some service, cleanup )
-** Data bag
-Chef concept.
-Global variable stored in JSON on instance
-Variables can be shard between stacks
-*** levels at which they can be found
-- Stack level
-- Layer level
-- Instance level
-- Application level
-*** find data bag
-Chef can access it using 'search' functionality
-#+BEGIN_SRC bash
-app = search("aws_opsworks_app").first
-#+END_SRC
-OpsWorks doesn't support encryption - use private S3 to store data bags & SDK ruby to get it
-*** Liux instance store location
-/var/chef/runs/<run-ID>/data_bags
-*** Windows
-drive:\chef\runs\<run-id>\data_bags
-* Monitoring
 * CloudFormation
 Infrastructure as Code ( you declare what you want, and AWS gets it for you )
 Can be version controlled
@@ -1080,12 +407,767 @@ History of events / API calls made out from my AWS account:
 - AWS Services
 You can put output to CloudWatch Logs
 If something gets deleted....check CloudTrail first !important
+* CodeBuild
+Fully managed build service
+Continuous scaling ( no build queue,build server to manage etc ...  unlike Jenkins )
+Pay for usage ( the time used to build )
+Uses docker ( you can use your own docker images )
+Build instructions CAN be defined in code ( in BUILDSPEC.YML file) !important
+Output logs ===> S3 & CloudWatch
+Use CloudWatch to trigger notifications ( and detect failed builds etc)
+Use Lambda as Glue
+Use SNS notifications
+You can reproduce build locally to troubleshoot
+You can use docker to extend any environment you like ( eg. Huskel ) - its fully extensible because of it
+You can use S3 Cache Bucket to cache build dependencies ( if you say are doing multiple builds etc )
+** When build finishes / fails ===> CONTAINER GETS DELETED!
+** Code source
+Github
+CodeCommit
+CodePipeline
+S3
+...
+** Integrations
+KMS for encription
+IAM for build permissions
+VPC for network security
+CloudTrail for API calls tracing
+** buildspec.yml
+Must be at the ROOT of the code
+Contains variables ( plaintext or SSM param store )
+*** Phases
+Install : gets dependencies
+Pre-build : final commands before build
+Build : actual build commands
+Post build : finishing touches ( zipping files )
+Upload artifacts to S3
+Cache files to S3 ( usually dependencies )
+*** Local build ( for troubleshooting )
+Uses CodeBuild Agent
+* CodeCommit
+Version control
+Private Git repository
+No size limit
+Fully managed, highly available
+Cody stays in AWS Cloud account ( security )
+Secure ( encryption , access control etc )
+Integreated with CI tools ( CodeBuild, Jenkins etc )
+*** Requirements
+You must have
+- 1.7.9 github version to use CodeCommit
+- IAM policy & user for accessing AWS CodeCommit OR belong to CODESTAR project team
+
+** CodeCommit Security
+Interaction used with Git commands
+*** Authentication: ( you are who you say you are )
+-HTTPS (use AWS CLI Authentication or generate HTTPS credentials )
+-SSL Keys (configure keys via AIM Console)
+-MFA ( multi factor )
+*** Authorization: ( you have access to do stuff )
+IAM Policies manage user / roles access to repos
+*** Encryption
+REST: Repos are encrypted automatically using KMS
+TRANSIT: https or ssl
+*** Cross Account Access
+Use IAM Role and AWS STS ( AssumeRole API )
+DO NOT SHARE SSH / AWS credentials EVER!
+*** CodeCommit vs GitHub
+**** Similar
+Both are git repos
+Support code reviews ( Pull Requests )
+Can be integrated with CodeBuild
+Support HTTPS and SSH for authentication
+**** Differences
+***** Security
+Github is administered using GITHUB USERS
+CodeCommit uses IAM roles & users
+***** Hosted
+GitHub is 3rd party
+CodeCommit is manages & hosted by AWS
+***** Notifications
+: every time someone commits code, we can trigger events / background checks
+: for example, lambda can check if there are any credentials in the code ...
+CodeCommit can be integrated with
+- AWS SNS ( Simple Notification Service )
+- AWS Lambda
+- AWS CloudWatch Event Rules
+*** Notification
+Use cases:
+**** SNS / Lambda
+1) Push to existing branch
+2) Create branch
+3) Delete branch
+4) Trigger Lambda OR SNS
+**** CloudWatch Rules
+1) Trigger for Pull Requests ( create / update / delete / comment )
+2) Commit comments events
+3) CloudWatch Event Rules goes into an SNS topic ( sns - simple notification service)
+4) CloudWatch will send email notification
+* CodeDeploy
+Each EC2 ( or On Premise machine ) MUST run CodeDeploy Agent
+Agent keeps asking CodeDeploy for work
+CodeDeploy points at APPSPEC.YML !important
+Application is pulled from GitHub / S3
+EC2 runs deployment instructions
+CodeDeploy agent reports success / failure of the deployment
+
+EC2 instances are grouped by deployment group ( dev / qa / prod )
+CodeDeploy can be chained into CodePipeline and use artifacts from there
+CodeDeploy can reuse tools , autoscaling integrations, other apps
+Blue / Green works with EC2 instances ( but not with ON PREM )
+CodeDeploy supports AWS Lambdas
+CodeDeploy DOES NOT provision resources ( EC2 instances are assumed to already exist! )
+** appspec.yml !important
+IN ROOT FOLDER !
+*** file section
+how to source & copy files from S3 / GitHub
+*** hooks ( can have timeouts )
+Not all of them have to be defined
+deployment instructions
+**** ECS hooks
+ECS Hooks:
+
+Start, Install, TestTraffic, AllowTraffic and End – NO SCRIPTS AT THOSE STAGES
+
+Start
+BeforeInstall
+Install
+AfterINstall
+AllowTestTraffic
+AfterAllowTestTraffic
+BeforeAllowTraffic
+AllowTraffic
+AfterAllowTraffic
+End
+**** Lambda hooks
+LAMBDA HOOKS:
+Cant script: Start, AllowTraffic, End
+
+Start
+BeforeAllowTraffic
+AllowTraffic
+AfterAllowTraffic
+End
+**** EC2 hooks
+they CAN HAVE ALL OF THE stages
+
+*** deplyment config
+One at a time: fail if any but last fails
+Half at a time: fails if more than half fails
+All at once ( quickest but with downtime - good for dev )
+Custom ( eg 75% )
+*** failure
+If deploy fails, instance STAYS in fail state
+New deploy starts with failed instances
+To rollback : redeploy previous version OR enable automatic rollback for failures
+*** deployemnt target
+EC2 instances with tags
+AutoScalingGroup (ASG)
+Mix of above
+DEPLOYMENT_GROUP_NAME variable for extra config
+*** permissions that have to be set up
+2 roles:
+- For CodeDeploy ( AWS CodeDeploy policy )
+- For EC2 ( access to S3 -- read only )
+*** HOW TO SET UP DEPLOYMENT
+1) Make sure you have EC2 instances / In place instances
+2) Give IAM role to EC2 instances ( to access data where source code will be )
+3) Install DeploymentAgent on EC2 instances
+4) Put a tag on EC2 instances
+
+5) Give role CodeDeploy
+6) Set up CodeDeploy groups
+7) Make sure APPSPEC.YML is defined in ROOT of the source code
+** install code agent
+#+BEGIN_SRC bash
+  sudo yum update -y
+  sudo yum install -y ruby wget
+  wget https://aws-codedeploy-eu-west-1.s3.eu-west-1.amazonaws.com/latest/install
+  chmod +x ./install
+  sudo ./install auto
+  sudo service codedeploy-agent status
+#+END_SRC
+* CodePipeline
+Each stage generates 'artifacts' that are stored in S3 bucket ( and passed from there to next stage )
+Each change in state generates CloudWatch Events which in turn can create SNS notification ( you can create events for failed pipelines )
+On failure at any stage, pipeline stops
+You can use AWS CloudTrail to audit API calls
+If pipeline fails stage check if it has necessary permissions "IAM Service Role" (check attached policies)
+When created CodePipeline creates CloudWatch Event rule that will trigger ( on commit or can check periodically )
+** You can use Lambda as Custom Action jobs
+Action jobs can run in pararel or/and sequentially
+Lambda will use PutJobSuccessResult / PutJobFailureResult API call when its over
+It will use continuation token ( passes it in with the API call )
+** Continuation token
+Generated by job worker
 * Config
 Takes snapshops of your infrastructure at a given time/date
 It is REGION locked
 It can track IAM resources ( which are global )
 Doesn't track all resources ( most popular one's )
 It records relationships between resources ( which resources used given security group for example )
+* Commands
+//configure cli
+aws configure  //afterwards put in both your keys in
+//list buckets
+aws s3 ls s3://bucketofwitold
+//copy from bucket to bucket
+aws s3 cp s3://bucketofwitold/dog.jpg s3://mysecondbucketwitold
+//make bucket
+aws s3 mb s3://bucket-name-unique
+//remove bucket
+aws s3 rb s3://bucket-name-unique
+//create t2 instance
+aws ec2 run-instances --image-id ami-030dbca661d402413 --instance-type t2.micro
+//test command flag ( will not run )
+--dry-run
+
+* Databases
+** RDS : relational databases
+** DynamoDB: noSQL, serverless
+** ElastiCache: in memory ( redis / memcached )
+** Redshift: OLAP - analytic processing ( data warehouseing )
+** Neptune: Graph database
+** DMS: Database Migration Service
+* DynamoDB
+Fully managed
+Replication across 3 AZ
+NoSQL
+Fast and consistent
+Distributed
+Integrated with IAM for authrorization, security
+Event driven programming with DynamoDB streams
+Low cost
+Auto scales
+** Basics
+MAX 256 tables per region
+Made out of tables
+Each TABLE has PRIMARY key
+ITEMS = ROWS
+Each item has attributes ( can be added over time, be null )
+MAX Size of item = 400KB ( a lot for a single row )
+*** Primary key
+1) Partition key only
+Key is hashed
+Should be 'diverse' so entries get spread wide
+1) Partition key + sort key
+** Throuput !important
+You have to set the throuput yourself
+You can set auto scaling option
+Throuput can be exceeded for a short time using "burst credit"
+"ProvisionedThrouputException" -- when you are over your T & out of "burst credits"
+Use exponential backof retry setting !
+RCU & WCU are spread evenly across partitions
+*** Write Capacity Units
+1 WCU = 1 write per second for 1 item up to 1KB in size ( Sizes get rounded up)
+6 items * 1second * 3.5kb = 24WCU
+6 items * 2 seconds each * 3.5kb = 12WCU
+
+*** Read Capacity Units
+1 RCU = 1 SCR OR 2 ECR for an item up to 4kb
+**** Eventually Consistent Read ( Default )
+If you read the same data after writing it, you can get old data
+because replication does takes time
+**** Strongly Consistent Read
+You will get consistent reads, even if you query for data you just wrote
+*** Throttiling
+If your key is not distributed enough, you might end up with a 'hot' partition
+that gets the bulk of traffic
+this can lead to :
+"ProvisionedThroughputExceededException"
+Solution:
+- use highly distributed keys
+- exponential backof on retries
+- use DynamoDB Accelerator ( DAX ) -- RCU only
+*** API !important
+**** WRITE ------------
+**** PutItem
+Full replace ! or create
+Consumes WCU
+**** UpdateItem
+Partial replace
+**** Conditional Updates
+Update/replace data only if given condition is met
+Useful in situation when two updates occurr at the same time ( helps with concurrent access to items )
+No performance impact
+**** DeleteItem
+Deletes individual item
+Can do conditional delete
+**** DeleteTable
+Faster than deleting individual items
+**** BatchWriteItem
+Up to 25 PutItem AND/OR DeleteItem in one call ( NO updateItem )
+LIMITS:
+Up to 16MB per batch AND 400KB per item
+Batching lowers latency
+More efficient, because DynamoDB will execute them in parallel
+Part of batch can fail, and ITS YOUR REPSPONSIBILITY TO RETRY ( use exponential backoff )
+**** READ-----------
+**** GetItem
+Read based on Key ( HASH OR HASH-RANGE )
+**** ProjectionExpression !important
+Use If you want to get only certain attributes
+**** BatchGetItem
+Up to 100 items
+Upt to 16MB of data
+Executed in parallel
+**** Query
+Efficient way to get data
+PartitionKey value ( must use = operator ) !important
+SortKey value ( =, >, <, Between, Begin etc ) -- optional
+FilterExpression -- if you want to further filter ( FILTERING OCCURS CLIENT SIDE, DYNAMODB doesn't do processing )
+Returns:
+Up to 1MB MAX
+or number of items specified in LIMIT
+You can paginate results
+**** Scan
+Scans entire table
+Very inefficient
+Up to 1MB of data returned
+Consumes of RCU
+You can use LIMIT
+You can use parallel scans for better performance ( even more RCU used up )
+You can use ProjectionExpression AND FilterExpress ( WILL NOT LOWER RCU USED UP )
+**** LSI ( Local Secondary Index )
+MAX 5 per table
+Must be defined at table CREATION time
+It's LOCAL to the partition INDEX
+Shares RCU/WCU with the original table
+(you essentially swap sort attribute for different one, partition key stays the same)
+**** GSI ( Global Secondary Index)
+MAX 20 per table
+To speed up queries on non-key attributes
+Creates 'new' table
+Has independent WCU/RCU
+( you can swap both partition and sort keys for new attributes from table )
+**** Concurrency
+DynamoDB is OPTIMISTIC LOCKING / concurrency database  !important
+**** DAX ( Dynamo Accelerator )
+Cache for DynamoDB
+Writes go through DynamoDB
+Extremely low latency for cached READS/QUERIES
+Solves 'hot key' problem
+DEFAULT : items live 5 min in cache
+Up to 10 nodes in cache cluster
+It is multi AZ
+Secure at rest KMS
+IAM...the usual
+VPC suported
+**** Dynamo Streams
+Create/Delete/Update operations on DB create CHANGELOG
+Changelog can be streamed and acted on ( eg. use LAMBDA or SNS )
+Data retaine for 24h ( just like Kinesis )
+**** Other
+Backup & Restore options available (no impact on performance)
+You can create GLOBAL Table ( high performance / fully replicated )
+You can use DMS to migrate other DB to Dynamo ( Oracle, Mongo etc )
+You can run local Dynamo for development on your computer
+**** Security
+KMS at rest\
+SSL/TSL at flight
+IAM for authorization
+VPC available
+* EBS Volume
+Network drives
+Only one EBS can be attached/detached to EC2's
+Locked to Availability Zone eg: us-east-1a != us-east-1b
+You can move SNAPSHOTS of it
+EBS backups use IO so don't perform them when application is busy
+Root EBS gets terminated with the instance ( can be turned off )
+Get charged by provisioned size, not used one
+You can resize volumes
+** EBS encryption !important
+Data at rest is encrypted inside the volume
+Data moving between instance & volume is encrypted
+Snapshots created from this volume are encrypted
+** Snapshots
+Snapshots take actual size not the whole provision of EBS
+Used for backups
+When you want to resize a volume down
+Change volume type
+Encrypt volume
+** Instance stores
+Physically attached to the machine
+Better I/O performance
+On termination of instance, data is lost
+Cant resize
+Backups must be operated by user
+* ECR
+Elastic Container Registry
+Amazon's repository for docker images
+
+*** Push commands
+1) log in to ECR ( cli )
+
+Integrated with IAM
+If it doesn't work, check IAM permissions!
+
+//LINUX/MAC
+$(aws ecr get-login --no-include-email --region eu-west-1)
+//WINDOWS
+Invoke-Expression -Command (Get-ECRLoginCommand -Region eu-west-1).Command
+
+---
+//build
+docker build -t <name> .
+//tag ( rename image )
+docker tag <name>:latest 489210310983.dkr.ecr.eu-west-1.amazonaws.com/<name>:latest
+//push
+docker push 489210310983.dkr.ecr.eu-west-1.amazonaws.com/<name>:latest
+
+//pull
+1) login
+2) docker pull aws uri of the docker image
+
+** Fargate
+( Serverless )
+We don't have to provision EC2 anymore
+Fargate provisions instances and gives them ENI
+Specify spec ( CPU / RAM )
+Fargate tasks can have IAM Roles which are used to execute agains AWS
+
+** Integrations
+*** X-Ray
+You need to run separate container with task definition to run X-Ray
+
+*** CloudWatch Logs
+Set up logging at TASK DEFINITION level
+Each container can have a separate log stream
+
+** CLI ECR
+//login
+aws ecr get-login
+
+//pull
+docker pull <name>
+
+//push
+docker push <name>
+
+//build
+docker build -t demo
+
+//create service on ECS
+aws ecs create-service
+
+* ECS ( docker )
+Elastic Container Service
+Private ( amazons ) repo for docker images
+** Docker Contaners Mangement systems
+1) ECS ( amazon )
+2) Fargate ( amazon serverless )
+3) EKS ( amazon's kubernetes )
+
+** ECS config
+/etc/ecs/ecs.config --> put your cluster name there
+
+** ECS Clusters
+Logical grouping of EC2 instances:
+
+EC2 runs special AMI which in turn runs ECS agent ( Docker container )
+ECS agent registers the instance to the ECS cluster
+
+** ECS Task Definitions
+Metadata in JSON format
+Tells ECS how to run Docker Container
+You have to provide TASK ROLE ( if container can't do something, it's probably because it doesn't have a task role)
+They have to have IAM Roles to execute against AWS ( EC2 instances don't need roles )
+Security groups operate on INSTANCE LEVEL not TASK level, so each instance has to have its own sec group
+
+** Dynamic host port mapping
+Available only with Application Load Balancer ( Classic LB can't do it )
+It automatically pics up 'random' ports spinned up by the docker images, and map them.
+If you want to run multiple containers ( of the same type ) on the same EC2 instance, YOU CANNOT SET HOST PORT MANUALLY ( set only container port )
+* EC2 Elastic compute cloud
+NEVER PUT YOUR CREDENTIALS on EC2!!!
+Use IAM Roles to give credentials to EC2
+EC2 can have only 1 ROLE at a time
+You can have as many roles as you want...just one can be used per given instance!
+Each role can have multiple permissions
+** Metadata
+Information about ec2 instance
+DONT FORGET TRAILING SLASH!
+http://169.254.169.254/latest/meta-data/
+
+//get temporary credentials
+curl http://169.254.169.254/latest/meta-data/iam/security-credentials/EC2_rolecurl http://169.254.169.254/latest/meta-daa/iam/security-credentials/EC2_role
+** Cannot see IP of customer going through load balancer
+Can only see private IP of ALB, in order to get IP of client
+check the header 'X-Forwarded-For'
+to check the port check 'X-Forwarded-Port'
+** Custom AMI
+Customers can spin up their own versions of OS
+with custom setup/software/access etc
+** T2 Instances
+They are burstable :
+they have 'cpu credits', and under unexpected load
+they can perform very well, unless they run out of cpu creds
+** User Data
+Used to run commands when the instance starts up
+Commands run with 'sudo'
+Every bash script has to start with
+#+BEGIN_CENTER bash
+   #!/bin/bash
+#+END_CENTER
+** shh into machine
+ssh -i <key-file.pem> ec2-user@ip-address
+** shh on windows
+use PUTTY to ssh into it
+** Launch Types
+*** On demand
+short workload, predictable pricing
+*** Reserved Instances
+long workloads ( 1+ year )
+*** Convertible Reserved Instances
+long workloads with flexi instances
+*** Scheduled Reserved Instances
+launch within reserved time window
+*** Spot Instances
+short workloads, cheap, can loose instances!
+*** Dedicated Instances
+no other customer will share hardware
+*** Dedicated Hosts
+book entire server
+** need to know
+*** how to ssh into ec2
+*** how to change .pem permissions (chmod)
+gives a permission error exception if you can't access .pem
+*** how to use security groups
+*** differences between private/public/elastic IP
+*** how to use User Data at boot time
+*** know that you can use custom AMI
+*** instances are billed per second
+** Pricing
+Depends on:
+-region
+-instance type
+-on demand / reserved / dedicated / spot
+-type of OS
+-billed per second, with min of 60
+* EFS
+Elastic File System
+Storage capacity is ELASTIC ( increases / decreases with use )
+Fully managed service
+Big Data & Analytics
+Media processing workflows
+Content Management
+Can be connected to multiple EC2
+Can be used by on-premises servers ( good for migration )
+* Elastic Beanstalk
+Relies on CLOUD FORMATION under the hood
+*** 3 Components
+**** Application
+**** Application version
+**** Environment name (dev, test, prod)
+*** Deployment modes
+**** Single instance
+Good for development
+1 instance + security group + elastic IP + auto scaling group in one AZ
+**** High Availability with Load Balancer
+Good for prod
+Elastic load balancer talk to ASG ( auto scale group )
+Multi instances auto scaled, across multi AZ, load balancer
+*** Update modes
+**** All at once
+Fastest,
+instances will be temporarily out ( there will be downtime )
+No cost
+**** Rolling
+Updates backet (N number of instances @ one time to be updated) at a time
+Moves to next bucket when the updated one is healthy
+Can take long time if many instances
+No cost
+Runs below capacity
+**** Rolling with additional batches
+Spins up a batch to serve all content while the bucket is being updated ( no hit to performance )
+Additional cost (extra instances spinned up to cover downed instances )
+No downtime
+Runs at capacity
+**** Immutable
+Spin up new instances running updated app, in new ASG.
+Swap for old one when all is healthy
+Longest deployment time
+Great for prod
+Double capacity at a time
+No downtime
+High extra cost
+**** Blue / Green
+Deploy new environment
+Spin up 100 % extra instances with new code
+Redirect a bit of traffic using Route 53 to new environment ( weighted policy )
+When all is ok
+DNS changed when all is ok
+Takes long time to deploy
+YOU NEED TO USE Autoscaling group (you could provision instances manually, but thats crazy-don't)
+YOU NEED TO USE Load Balancer
+*** Updating
+New code has to be ZIPped
+All params can be set up within code
+Files have to be in a folder called, in the ROOT level of the application
+File format: YAML / JSON
+Files must end with: .config extension
+You can change default settings using OPTION_SETTINGS parameter
+You can additional resources using those options
+#+BEGIN_SRC
+.ebextensions/
+#+END_SRC
+IF YOU DELETE environment, you will loose all .ebextension resources associated with it ( also RBS )
+*** Optimization
+This is how the process looks like:
+1) Describe dependencies ( eg. package.json )
+2) Package zip with source code
+3) Upload zip to EC2
+4) Resolve / download dependencies on each EC2
+
+Last step takes the longes ( if lots of deps )
+
+TO INCREASE SPEED, PACKAGE DEPENDENCIES WITH SOURCE CODE
+*** CLI
+**** commands
+eb deploy
+eb create
+eb status
+eb health
+eb open
+...
+**** helpful for automated deployment pipelines
+*** Exam tips !important
+**** Can work with https
+Load SSL cert on to the Load Balancer
+- use console ( eb console -> load balancer configuraton )
+- OR use code: -> .ebextensions/securelistener-alb.config
+SSL Cert can be provisioned using ACM ( aws certificate manager) or CLI
+- configure security group ( allow 443 -- https )
+**** How to redirect HTTP -> HTTPS
+1) configure your instances to redirect
+OR
+2) configure the Application Load Balancer (alb ONLY!) with a rule
+DO NOT REDIRECT HEALTH CHECKS ( or you will not get 200 )
+**** Lifecycle Policy
+Can store up to 1000 application versions
+Use lifecycle policy to phase out old versions:
+- based on time
+- based on space
+- used versions are not deleted
+- option NOT to delete underlying S3 ( so you can recover data )
+**** RDS in beanstalk
+Database is tied to environment -- it will get deleted if you remove env
+For PROD use separate DB and provide connection STRING to EB
+You can migrate coupled DB from EB to standalone RDS:
+1) Take RDS DB snapshot
+2) enable deletion protection in RDS
+3) create new env in EB without RDS --> point env to OLD RDS
+4) perform blue / green deployment and swap new and old environments
+5) terminate old env ( rds wont get deleted bcs of protection setting )
+6) delete cloud formation stack
+* ElastiCache
+In memory version of RDS ( Redis / Memcached )
+Has Read & Write scaling ( Replicas / Sharding )
+Multi AZ with failover
+Can be encrypted at rest & in-transit
+* IAM
+Identity and Access Management
+It's global ( not locked to a zone / region )
+* Lambda
+On demand
+Virtual functions
+No servers to manage
+Automated scaling
+Pay per invocation & execution time
+Free 1million requests & 400,000GB of compute time
+Integrated with the full AWS stack ( can be used anywhere )
+Integreated with all major languages
+Monitoring via CloudWatch
+You can allocate RAM size to functions
+DEFAULT time out is 3 seconds ( MAX 300s )
+Memory: 128MG - 3GB
+Ability to deploy in VPC
+IAM role has to be attached to function
+** Concurrency
+Up to 1000 concurrent executions ( can be higher through ticket )
+Reserved concurrency: max concurent lambdas
+If you end up over limit: THROTTLE will kick in
+Throttle:
+- synchronous -> return TrottleError ( 429 )
+- asynchronous -> retry...if to many retries ( 2 retries )...send to DeadLetterQueue ( if you set it up !)
+DLQ can be SNS topic or SQS ( Remember that Lambda must have IAM authorization to send to those services ) !important
+** Logs
+Execution logs are stored in CloudWatch Logs
+Metrics are stored in CloudWatch Metrics
+Make sure Lambda has IAM access to write to CloudWatch
+
+X-ray can be enabled for Lambda ( daemon is handled by AWS )
+Set up IAM for x-ray...
+** Limits
+Memory: 128 - 3008MB (64MB increments)
+Max execution time: 5 min
+Disc capacity 512MB ( in /tmp folder )
+Concurrency limit: 1000 ( open support ticket to increase )
+
+Lambda zipped max size : 50MB
+Lambda unzipped max size: 250MB
+You can use /tmp to go over the size limit
+Max size of environment variables 4Kb ( total )
+** Versions
+When you work on lambda it is $LATEST version
+Once you publish lambda:
+- it becomes immutable
+- it gets ARN
+- it gets version number ( increasing )
+
+*** Aliases
+Aliases are mutable, and can point at specific versions
+
+** Best practices !important
+
+Perform heavy duty outside of lambda :
+- connecting to DB
+- initializing SDK
+- pull in data / dependencies OUTSIDE of lambda function ( use execution context )
+
+Use environment variables for DB connection strings, S3 buckets... don't put them directly into your code!
+
+Encrypt passwords using KMS
+
+Never use recursive code !
+
+Dont use VPC unless you have to ( it takes longer if you do )
+* Linux commands
+** install
+yum install
+** switch to root
+sudo su
+* Load Balancers
+** Can scale but need to 'warm up'
+** CLB/ALB/NLB has a static host name
+Do not resolve and use underlying IP
+** Provide SSL certs & SSL termination (Classic and ALB)
+** Types
+v1 balancer ( classic )
+v2 application / network balancer
+** Health checks ( available to all ALB )
+ELB can perform health check on instance
+Done on PORT & ROUTE ( /health )
+** Application Load Balancer (v2)
+Layer 7
+Can route based on hostname / path
+Great fit with ECS (Docker)
+Can handle/serve multiple groups/apps
+Can implement 'stickiness' and direct same user to the same group ( ALB will generate cookie, not your application !)
+Supports HTTP/HTTPS & Websockets protocols
+APPLICATIONS dont see IP of clients directly! ( Ip is placed in header 'X-Forwarded-For)
+** Network Load Balancer (v2)
+Layer 4
+Forwards TCP traffic
+** CLB/ALB cannot see client IP directly
+NLB can see IP directly
+Ip is stored in 'X-Forwarded-For' header (for alb/clb)
+** 4xx errors
+Client induced error
+** 5xx errors
+Application/Server side errors
+** If unable to connect to application..
+Check security groups!
 * Messaging
 Syncronous
 Asyncronous
@@ -1271,332 +1353,268 @@ Encription at flight using HTTPS
 At REST using KMS
 You can encrypt on Client Side
 VPC endpoints are AVAILABLE ( unlike SQS )
-* Serverless
-We don't manage the server
-- Lambda
-- S3
-- Dynamo DB
-- SNS / SQS
-- Aurora Serverless
-- AWS Cognito
-- AWS API Gateway
-- AWS Kinesis
-* Lambda
-On demand
-Virtual functions
-No servers to manage
-Automated scaling
-Pay per invocation & execution time
-Free 1million requests & 400,000GB of compute time
-Integrated with the full AWS stack ( can be used anywhere )
-Integreated with all major languages
-Monitoring via CloudWatch
-You can allocate RAM size to functions
-DEFAULT time out is 3 seconds ( MAX 300s )
-Memory: 128MG - 3GB
-Ability to deploy in VPC
-IAM role has to be attached to function
-** Concurrency
-Up to 1000 concurrent executions ( can be higher through ticket )
-Reserved concurrency: max concurent lambdas
-If you end up over limit: THROTTLE will kick in
-Throttle:
-- synchronous -> return TrottleError ( 429 )
-- asynchronous -> retry...if to many retries ( 2 retries )...send to DeadLetterQueue ( if you set it up !)
-DLQ can be SNS topic or SQS ( Remember that Lambda must have IAM authorization to send to those services ) !important
-** Logs
-Execution logs are stored in CloudWatch Logs
-Metrics are stored in CloudWatch Metrics
-Make sure Lambda has IAM access to write to CloudWatch
+* Monitoring
+* OpsWorks
+** Lifecycle events
+*** Setup: once the instance boots up, initial installation of package
+*** Configure [events]: events are executed when:
+- instance goes online
+- OR offline
+- OR attach/detach ELB
+- OR associate/disassociate EIP of the instance
+Configure runs on ALL instances at the same time ( except for the newly attached one ?)
+*** Deploy: for manual deployment of new app
+*** Undeploy: remove the app from the set of application servers
+*** Shutdown: shut down instance BEFORE its terminated ( ex: deregister from some service, cleanup )
+** Data bag
+Chef concept.
+Global variable stored in JSON on instance
+Variables can be shard between stacks
+*** levels at which they can be found
+- Stack level
+- Layer level
+- Instance level
+- Application level
+*** find data bag
+Chef can access it using 'search' functionality
+#+BEGIN_SRC bash
+app = search("aws_opsworks_app").first
+#+END_SRC
+OpsWorks doesn't support encryption - use private S3 to store data bags & SDK ruby to get it
+*** Liux instance store location
+/var/chef/runs/<run-ID>/data_bags
+*** Windows
+drive:\chef\runs\<run-id>\data_bags
+* OTHER
+** CloudFront
+Its a CDN ( content delivery network )
+Improves performance / availability / fully encrypted
+Content cached
+136 Points globally
+Popular with S3
+Supports HTTPs, SSL encryption
+Can help against DDNS attacks
+Supports RMTP algo encryptions
 
-X-ray can be enabled for Lambda ( daemon is handled by AWS )
-Set up IAM for x-ray...
-** Limits
-Memory: 128 - 3008MB (64MB increments)
-Max execution time: 5 min
-Disc capacity 512MB ( in /tmp folder )
-Concurrency limit: 1000 ( open support ticket to increase )
+** Step Functions
+Orchestration of lambdas ( visual )
+Max execution of 1 year
+Use cases:
+order fulfilment
+data processng etc
 
-Lambda zipped max size : 50MB
-Lambda unzipped max size: 250MB
-You can use /tmp to go over the size limit
-Max size of environment variables 4Kb ( total )
-** Versions
-When you work on lambda it is $LATEST version
-Once you publish lambda:
-- it becomes immutable
-- it gets ARN
-- it gets version number ( increasing )
+** SWF
+Coordinates work between applications
+Workflow tool ( older than step functions - probably not supported anymore )
+Use only if you need EXTERNAL SIGNALS or CHILD PROCESSES !important
+Guarantees ORDER of task execution
+No duplicate tasks
 
-*** Aliases
-Aliases are mutable, and can point at specific versions
+*** Worflow ( also knows as DECIDER )
+Sequence of steps to perform a task
+**** ACTIVITY is a single step in workflow
+** SES
+Simple Email service
 
-** Best practices !important
-
-Perform heavy duty outside of lambda :
-- connecting to DB
-- initializing SDK
-- pull in data / dependencies OUTSIDE of lambda function ( use execution context )
-
-Use environment variables for DB connection strings, S3 buckets... don't put them directly into your code!
-
-Encrypt passwords using KMS
-
-Never use recursive code !
-
-Dont use VPC unless you have to ( it takes longer if you do )
-* DynamoDB
-Fully managed
-Replication across 3 AZ
-NoSQL
-Fast and consistent
-Distributed
-Integrated with IAM for authrorization, security
-Event driven programming with DynamoDB streams
-Low cost
-Auto scales
-** Basics
-MAX 256 tables per region
-Made out of tables
-Each TABLE has PRIMARY key
-ITEMS = ROWS
-Each item has attributes ( can be added over time, be null )
-MAX Size of item = 400KB ( a lot for a single row )
-*** Primary key
-1) Partition key only
-Key is hashed
-Should be 'diverse' so entries get spread wide
-1) Partition key + sort key
-** Throuput !important
-You have to set the throuput yourself
-You can set auto scaling option
-Throuput can be exceeded for a short time using "burst credit"
-"ProvisionedThrouputException" -- when you are over your T & out of "burst credits"
-Use exponential backof retry setting !
-RCU & WCU are spread evenly across partitions
-*** Write Capacity Units
-1 WCU = 1 write per second for 1 item up to 1KB in size ( Sizes get rounded up)
-6 items * 1second * 3.5kb = 24WCU
-6 items * 2 seconds each * 3.5kb = 12WCU
-
-*** Read Capacity Units
-1 RCU = 1 SCR OR 2 ECR for an item up to 4kb
-**** Eventually Consistent Read ( Default )
-If you read the same data after writing it, you can get old data
-because replication does takes time
-**** Strongly Consistent Read
-You will get consistent reads, even if you query for data you just wrote
-*** Throttiling
-If your key is not distributed enough, you might end up with a 'hot' partition
-that gets the bulk of traffic
-this can lead to :
-"ProvisionedThroughputExceededException"
-Solution:
-- use highly distributed keys
-- exponential backof on retries
-- use DynamoDB Accelerator ( DAX ) -- RCU only
-*** API !important
-**** WRITE ------------
-**** PutItem
-Full replace ! or create
-Consumes WCU
-**** UpdateItem
-Partial replace
-**** Conditional Updates
-Update/replace data only if given condition is met
-Useful in situation when two updates occurr at the same time ( helps with concurrent access to items )
-No performance impact
-**** DeleteItem
-Deletes individual item
-Can do conditional delete
-**** DeleteTable
-Faster than deleting individual items
-**** BatchWriteItem
-Up to 25 PutItem AND/OR DeleteItem in one call ( NO updateItem )
-LIMITS:
-Up to 16MB per batch AND 400KB per item
-Batching lowers latency
-More efficient, because DynamoDB will execute them in parallel
-Part of batch can fail, and ITS YOUR REPSPONSIBILITY TO RETRY ( use exponential backoff )
-**** READ-----------
-**** GetItem
-Read based on Key ( HASH OR HASH-RANGE )
-**** ProjectionExpression !important
-Use If you want to get only certain attributes
-**** BatchGetItem
-Up to 100 items
-Upt to 16MB of data
-Executed in parallel
-**** Query
-Efficient way to get data
-PartitionKey value ( must use = operator ) !important
-SortKey value ( =, >, <, Between, Begin etc ) -- optional
-FilterExpression -- if you want to further filter ( FILTERING OCCURS CLIENT SIDE, DYNAMODB doesn't do processing )
-Returns:
-Up to 1MB MAX
-or number of items specified in LIMIT
-You can paginate results
-**** Scan
-Scans entire table
-Very inefficient
-Up to 1MB of data returned
-Consumes of RCU
-You can use LIMIT
-You can use parallel scans for better performance ( even more RCU used up )
-You can use ProjectionExpression AND FilterExpress ( WILL NOT LOWER RCU USED UP )
-**** LSI ( Local Secondary Index )
-MAX 5 per table
-Must be defined at table CREATION time
-It's LOCAL to the partition INDEX
-Shares RCU/WCU with the original table
-(you essentially swap sort attribute for different one, partition key stays the same)
-**** GSI ( Global Secondary Index)
-MAX 20 per table
-To speed up queries on non-key attributes
-Creates 'new' table
-Has independent WCU/RCU
-( you can swap both partition and sort keys for new attributes from table )
-**** Concurrency
-DynamoDB is OPTIMISTIC LOCKING / concurrency database  !important
-**** DAX ( Dynamo Accelerator )
-Cache for DynamoDB
-Writes go through DynamoDB
-Extremely low latency for cached READS/QUERIES
-Solves 'hot key' problem
-DEFAULT : items live 5 min in cache
-Up to 10 nodes in cache cluster
-It is multi AZ
-Secure at rest KMS
-IAM...the usual
-VPC suported
-**** Dynamo Streams
-Create/Delete/Update operations on DB create CHANGELOG
-Changelog can be streamed and acted on ( eg. use LAMBDA or SNS )
-Data retaine for 24h ( just like Kinesis )
-**** Other
-Backup & Restore options available (no impact on performance)
-You can create GLOBAL Table ( high performance / fully replicated )
-You can use DMS to migrate other DB to Dynamo ( Oracle, Mongo etc )
-You can run local Dynamo for development on your computer
-**** Security
-KMS at rest\
-SSL/TSL at flight
-IAM for authorization
-VPC available
-
-* API GATEWAY
-Lambda + API = no infrastructure to manage
-Handles api versioning
-Allows multiple environments
-Handles security ( auth & authent )
-Handles throttling
-Genereate SDK & api specs
-Cache API responses
-Creates API keys
-
-** Integrations
-*** Outside VPC
-- Lambda
-- EC2
-- Load Balancers
-- ANY AWS service
-- External HTTP endpoints
-*** Inside VPC
-- Lambda
-- EC2
-** Stage Deployments
-*** Stage Variables
-Act like env vars in API Gateway ( can change code behaviour )
-Use to change configiguration values
-Use to define HTTP endpoints your STAGES talk to ( dev, test, prod )
-Pass configuration params
-Stage vars are passed to the CONTEX object in Lambda
-Stage vars help define what the code does, and where it points
-*** Canary deployment
-Redirect % of traffic to updated API to test it
-Used mostly for prod
-Metrics & logs are separate for each version of api being tested
-Like blue / green deployment in Lambda
-** Mapping Templates !important
-Used to modify requests
-Rename params
-Add headers
-We can use VLT ( velocity template language )
-** Swagger
-Documents API
-Can be written in JSON or YAML
-You can export current API as Swagger / OPENAPI
-** Cache
-DEFAULT live : 300 seconds ( 5 MIN )
-MIN 0, MAX: 3600 seconds ( 1h )
-Cache is defined per STAGE ( so dev can have different cache then prod )
-Cache can be encrypted
-MIN size: 0.5 GB
-MAX size: 237 GB
-You can override cache for specific methods
-You can flush whole cashe from console
-Client with proper IAM authorization CAN FLUSH CASH ( header: Cache-Control: max-age=0)
-** Logging
-You can enable CloudWatch at stage level
-Metric are also available as well as Access Logging
-You can integrate XRAY as well
-** CORS
-must be enabled if you receive calls from different domain
-OPTIONS pre-flight request must contain headers:
-- Access-Control-Allow-Methods
-- Access-Control-Allow-Headers
-- Access-Control-Allow-Origin
-CORS can be enabled from console
-** Usage plan
-You can limit number of calls and throttle traffic ( capacity and burst capacity )
-You can limit total number of requests pay day etc
-You can associate limits with stages
-Generate API keys:
-One key per customer
-Associate API with stages
+* Regions
+** All regions are scoped
+Except for IAM and s3
+* Route 53
+Use Alias over CNAME
+Managed DNS ( collection of records )
+DNS records get cached by browsers ( saved locally )
+** Records:
+*** A:
+url to ipv4
+*** AAAA:
+url to ipv6
+*** CNAME
+url to url
+*** Alias
+url to AWS resource
+** Features:
+Load balancing
+Health checks
+Routing policy ( geolocation, proximity, latency, weighted, simple)
+* RDS
+Relational Database Services
+** Replicas
+Applications MUST update the connection string to leverage read replicas!!
+Used for READ scaling !
+DB can have up to 5 replicas within & across AZ or regions
+Replication is ASYNC !
+Replicas can be promoted to their own DB
+Master has 'write/read', replicas only 'reads'
+** Disaster recovery
+No need to UPDATE connection string ( so the failover is seemless )
+One DNS can be set to 'standby'
+Increases availability
+Failover in case of disaster ( replication is SYNC )
+No manual intervention
+Not used for scaling (standby doesn't have read writes)
+** Backups
+Automatically enabled
+Daily snapshot
+Transaction logs saved for 7 days (35max)
+DB snapshots can be user triggered ( retained for as long as you want)
 ** Security
-*** IAM Permissions
-For users / roles alrady within my AWS account
-AUTH and AUTHORIZATION
-Uses SIG v4
-Client passes sig v4 in HEADER
-API Gateway checks the sig v4 with IAM, and if all ok, allows request to propagate
-No added cost
-*** Lambda Authorizers ( Custom authorized - old name )
-Good for 3rd party tokens
-Flexible with what IAM to return
-AUTHENTICATION & AUTHORIZATION
-Pay per lambda call
-Uses Lambda to verify token passed by client in HEADER of the request
-You can CACHE the result of authorization
-Good for 3rd party authorization ( OAuth, SAML )
-Lambda must return IAM policy for the user
-*** Cognito User Pool
-You manage your own user pool ( can be backed by Facebook, Google etc )
-Cognito manager full user life-cycle
-API Gateway verifies identity automatically from Cognito
-No custom implementation required ( all automated and FREE )
-FOR IDENTIFICATION NOT AUTHORIZATION !!!! Yes, he is who he says he is, but I don't know if he can access this resource
+*** Access
+RDS DB's are deployed within private subnet ( not a public one )
+Uses security groups ( to control who can COMMUNICATE with RDS )
+Uses IAM policies to control who can MANAGE
+Username / password for LOGIN to DB ( IAM users can be used - Postgre / Aurora)
+*** Encription
+Encription at REST with AWS KMS - AES-256 encription
+You can use SSL certs to encrypt data to RDS in FLIGHT
+Encryption can be enable only when CREATING database
+Read replicas have to be encrypted / unencrypted if master is enc / unc
+You can encrypt a snapshot of a unencrypted db and encrypt that ...
+You CANNOT disable encryption once its enabled
+*** Enforce SLL ! ( important )
+**** PostgreSQL
+rds.force_ssl=1 (in the AWS RDS Console - Parameter Groups)
+**** MySQL
+GRANT USAGE ON *.* TO 'mysqluser'@'%' REQUIRE SLL;
+*** Connect using SLL
+Provide SLL Trust cert ( can be downloaded from AWS )
+Provide SLL options when connection to DB
+*** Aurora
+Compatibile with postre & mysql
+'Cloud optimized'
+Automatically grows in increments of 10GB up to 64TB
+Can have up to 15 replicas
+Replication is faster
+Failover is instantaneous
+HA native ( high availability native )
+More expensive but also more efficient
+* S3
+Simple Storage Service
+No directories ( just keys )
+** Buckets
+Defined @ regional level BUT must have UNIQUE name GLOBALLY !
+*** Naming convention:
+- No uppercase
+- No underscore
+- 3 to 63 chars
+- not an IP
+- starts with letter or number
+** Objects
+They have a key
+*** Key
+Its a FULL path to an Object(file)
+<my_bucket>/my_file.txt
+*** Values
+Content of the body of object
+Max size is 5TB
+If file > 5GB must use 'multi-part upload' !important
+*** Metadata
+List of text key / value pairs ( sys or user metadata )
+*** Tags
+Useful for security / lifecycle
+** Versioning
+Enabled at bucket level
+File before we turn on versioning will have version 'null' !important
+Deleting versined file doesn't remove it, just puts 'delete marker' on it
+** Encryption !important
+4 Methods:
+*** SSE-S3
+Keys managed by AWS S3
+Key name: "S3 Managed Data Key"
+Objects encrypted server side
+Encryption: AES-256
+When sending data to S3: set header: "x-amz-server-side-encryption":"AES256"
+*** SSE-KMS
+Key Managed Service
+Keys managed by Key Management Service
+Key is called: "Customer Master Key" ( CMK )
+KMS gives you more control over keys and audit trail
+Server side encryption
+When sending data to S3: set header: "x-amz-server-side-encryption":"aws:kms"
+*** SSE-C
+Keys managed by YOU outside of AWS ( not stored by amazon)
+HTTPS must be used
+How to:
+Generate client side data key
+Using Https send DATA key in header
+Amazon encrypts object using key, and then discards the key
+*** Client Side Encryption
+Use client library such as Amazon S3 Encryption Client
+Client must encrypt when sending & receiving to S3
+Client fully manages keys & encryptin cycle
+How to:
+Generate data key
+Encrypt object using key ( on client side )
+Send encrypted object to S3 ( http/s )
+*** Encryption in transit
+Also called SSL / TLS
+HTTP endpoint: not encrypted
+HTTPS endpoint: encryption in flight ( mandatory for SSE-C )
+** Security
+*** User based
+IAM policies - which API calls should be allowed for a specific user
+*** Resource based (more popular)
+Bucket policies - bucket wide policy from S3 console ( allows cross account )
+Use S3 policy to:
+- Grant public access to bucket
+- Force object to be encrypted on upload
+- Grant access to another account ( Cross Account )
+JSON based policies:
+**** Resources: buckets and objects
+**** Actions: Set of API to Allow or Deny
+**** Effect: Allow / Deny
+**** Principal: the account/user to apply policy to
 
-User calls Cognito, gets token
-Passes token in header of request
-Gateway takes token and checks against Cognito
 
-YOU MUST IMPLEMENT YOUR OWN AUTHORIZATION LAYER IN THE BACK END on your own ( cognito will not handle it for you )
-** Cognito
-*** User Pools ( CUP )
-Serverless database for users of your app ( login & passwords )
-Simple login functionality
-Can verify emails, handles MFA
-Can handle Federated Identities ( Facebook, Google, SAML)
-Sends back Jason Web Token ( JWT )
-Can be integrated with Gateway for authentication
+*** Object Access Control List (ACL) !ignore
+*** Bucket Access Control List !ignore
+** Networking
+S3 supports VPC Endpoints ( for instances in VPC without www internet )
+** Logging and Audit
+S3 access logs can be stored in other S3 bucket ( not the same - or you will have endless loop)
+API calls can be logged in AWS CloudTrail
+** User Security
+MFA ( multi factor authentication ) can be enabled for file deletetion
+Signed URLs: valid only for a limited time
+** S3 Websites
+<bucket-name>.s3-website-<AWS-region>.amazonaws.com
+<bucket-name>.s3-website.<AWS-region>.amazonaws.com
+403 error --- > check bucket policy, does it allows public reads?!
+** CORS
+In order to share files from different bucket, that bucket needs to have a CORS enabled
+and configured correctly
+** Consistency Model
+EVENTUAL CONSISTENCY !important
+shit takes a while to update
 
-*** Identity Pools
-Provides DIRECT access from CLIENT side ( no proxies, no nothing, straight through )
+for example, you try GET on resource and get 404 response
+404 gets cached
+you PUT the resource and try GET again
+you will get 404 AGAIN because, 404 from first try was cached
+it will take some time before resource will be available
 
-*** Sync ( App Sync replaced it? )
+Another example:
+DELETE 200 -> GET 200
+After deleting a resource, you might still be able to GET it for a short while
+EVENTUAL CONSISTENCY RULE
+** Performance !important
+*** If you have > 100 TPS performance might degrade
+For best performance you want your objects distributed between different partitions
+PUT 4 RANDOM CHARS in front of your KEY NAME to optimise performance !important
 
+<my_bucket>/6ad7_myfolder/my_file1.txt
+<my_bucket>/a37f_myfolder/my_file2.txt
+
+(you don't have to do this anymore, but exam wasn't updated)
+
+*** For files > 5GB use MULTIPART UPLOAD
+
+*** If you want to do A LOT of reads, use CLOUDFRONT (caches S3 objects)
+
+*** If you want to UPLOAD a lot, use S3 Transfer Acceleration
+It uses edge locations
+
+*** SSE-KMS Encryption can lower performance
+You may have AWS limit for KMS usage ( 100s - 1000s download/upload per second)
 * SAM
 Severless Application Model
 YAML configuration
@@ -1611,94 +1629,54 @@ Transform: 'AWS::Serverless-2016-10-31'
 ** use package & deploy when processing template
 cloudformation package
 cloudformation deploy
-
-* ECS ( docker )
-Elastic Container Service
-Private ( amazons ) repo for docker images
-
-** Docker Contaners Mangement systems
-1) ECS ( amazon )
-2) Fargate ( amazon serverless )
-3) EKS ( amazon's kubernetes )
-
-** ECS config
-/etc/ecs/ecs.config --> put your cluster name there
-
-** ECS Clusters
-Logical grouping of EC2 instances:
-
-EC2 runs special AMI which in turn runs ECS agent ( Docker container )
-ECS agent registers the instance to the ECS cluster
-
-** ECS Task Definitions
-Metadata in JSON format
-Tells ECS how to run Docker Container
-You have to provide TASK ROLE ( if container can't do something, it's probably because it doesn't have a task role)
-They have to have IAM Roles to execute against AWS ( EC2 instances don't need roles )
-Security groups operate on INSTANCE LEVEL not TASK level, so each instance has to have its own sec group
-
-** Dynamic host port mapping
-Available only with Application Load Balancer ( Classic LB can't do it )
-It automatically pics up 'random' ports spinned up by the docker images, and map them.
-If you want to run multiple containers ( of the same type ) on the same EC2 instance, YOU CANNOT SET HOST PORT MANUALLY ( set only container port )
-
-** ECR
-Elastic Container Registry
-Amazon's repository for docker images
-
-*** Push commands
-1) log in to ECR ( cli )
-
-Integrated with IAM
-If it doesn't work, check IAM permissions!
-
-//LINUX/MAC
-$(aws ecr get-login --no-include-email --region eu-west-1)
-//WINDOWS
-Invoke-Expression -Command (Get-ECRLoginCommand -Region eu-west-1).Command
-
----
-//build
-docker build -t <name> .
-//tag ( rename image )
-docker tag <name>:latest 489210310983.dkr.ecr.eu-west-1.amazonaws.com/<name>:latest
-//push
-docker push 489210310983.dkr.ecr.eu-west-1.amazonaws.com/<name>:latest
-
-//pull
-1) login
-2) docker pull aws uri of the docker image
-
-** Fargate
-( Serverless )
-We don't have to provision EC2 anymore
-Fargate provisions instances and gives them ENI
-Specify spec ( CPU / RAM )
-Fargate tasks can have IAM Roles which are used to execute agains AWS
-
-** Integrations
-*** X-Ray
-You need to run separate container with task definition to run X-Ray
-
-*** CloudWatch Logs
-Set up logging at TASK DEFINITION level
-Each container can have a separate log stream
-
-** CLI ECR
-//login
-aws ecr get-login
-
-//pull
-docker pull <name>
-
-//push
-docker push <name>
-
-//build
-docker build -t demo
-
-//create service on ECS
-aws ecs create-service
+* SECURITY
+Never use root account ( except when first setting up )
+*** Users
+Physical person
+*** Groups
+Functions ( admins )
+*** Roles
+For machines
+*** Policies
+Govern permissions
+Define what each above groups can do
+*** Leas privilege principle
+Give minimal permissions to users they need to get job done
+*** Permissions
+**** 0644 <key_name> are too open
+chmod 0400 <key_name> (changes permissions to -r-----) (only owner can read)
+*** Security groups
+Act like firewall and block all Inboud / Outbound traffic that is not greenlit
+Can be attached to multiple instances ( vm's )
+Instance can have mutliple groups
+They work only within their region ( if you switch region, you have to recreate groups )
+They 'live' outside EC2 - they don't run on instances
+Defaults: all inbound is blocked and all outbound is allowed
+You can reference other security groups / CIDR blocks / IP addresses
+You CANNOT reference DNS names
+* Serverless
+We don't manage the server
+- Lambda
+- S3
+- Dynamo DB
+- SNS / SQS
+- Aurora Serverless
+- AWS Cognito
+- AWS API Gateway
+- AWS Kinesis
+* SDK
+** default credentials provider chain
+to authorize sdk  you can use:
+- aws credentials on your local computer
+- instance profile credentials using AIM Roles (on EC2 machine etc)
+- environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
+** Exponential backoff
+Included in SDK
+For rate limited api's
+Each retry will take x2 of the previous delay before trying again
+* STS command line
+Security Token Service
+aws sts decode-authorization-message --encoded-message
 
 * SECURITY
 ** KMS
@@ -1744,44 +1722,49 @@ Define role in IAM for another account to access
 Define which account can access the role
 Use STS ( Security Token Service ) to get creds and access role ( ASSUMEROLE API )
 Temp creds can be  valid between 15 min up to 1 h
-* OTHER
-** CloudFront
-Its a CDN ( content delivery network )
-Improves performance / availability / fully encrypted
-Content cached
-136 Points globally
-Popular with S3
-Supports HTTPs, SSL encryption
-Can help against DDNS attacks
-Supports RMTP algo encryptions
-
-
-** Step Functions
-Orchestration of lambdas ( visual )
-Max execution of 1 year
-Use cases:
-order fulfilment
-data processng etc
-
-** SWF
-Coordinates work between applications
-Workflow tool ( older than step functions - probably not supported anymore )
-Use only if you need EXTERNAL SIGNALS or CHILD PROCESSES !important
-Guarantees ORDER of task execution
-No duplicate tasks
-
-*** Worflow ( also knows as DECIDER )
-Sequence of steps to perform a task
-**** ACTIVITY is a single step in workflow
-** SES
-Simple Email service
-
-* Databases
-** RDS : relational databases
-** DynamoDB: noSQL, serverless
-** ElastiCache: in memory ( redis / memcached )
-** Redshift: OLAP - analytic processing ( data warehouseing )
-** Neptune: Graph database
-** DMS: Database Migration Service
-* ACM
-Amazon Certificate Manager
+* VPC
+Virtual Private Cloud
+Tied to a region
+Each VPC contains subnets ( networks )
+Each subnet must be mapped to AZ
+Public & Private subnets CAN communicate if they are in the same VPC
+5 vpc's MAX per region
+5 internet gateways per region
+50 customer gateways per region
+50 VPN connection per region
+200 rout tables per region / each 50 entries
+5 elastic ip's per region
+500 security groups per VPC
+50 rules per security group
+LIMITS CAN BE EXTENDED - contact aws
+Spans ALL availability zones
+** Subnets
+Subnet exists in ONE availability zone ( cannot span 2+ )
+Must be associate with route table ( explicitly or implicitly - main )
+** Public subnets ( available to public ):
+ASSOCIATED WITH ROUTE TABLE THAT HAS INTERNET GATEWAY ATTACHED
+Load balancers
+Static websites
+Files
+Public authentication layers
+** Private subnets
+Web app servers
+Databases
+** Network Access Control Lists (ACLs)
+Like a firewall on SUBNET level
+They are STATELESS ( if I allow SSH in...I have to explicitly set rule to let it OUT )
+** Security Groups
+They are STATEFULL ( if I allow SSH in...it will be able to get OUT )
+On resource/instance level
+No DENY rules...only ALLOW - all else is blocked by default
+** Bastion Host
+EC2 instance
+Lives in public subnet
+Used as a 'gateway' for instances that live in PRIVATE subnets
+Can be used to ssh into private resources on private subnets ( without VPN )
+** NAT Gateway
+Allows access to internet to resources that live in private subnets
+Used for updating / patching
+One way traffic - traffic can enter only if it originated from PRIVATE subnet
+MUST be in public subnet
+MUST be part of the private subnet rout table
