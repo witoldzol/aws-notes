@@ -2,7 +2,7 @@
 ;; Fundamentals
 * Need to know
 ** EC2
-*** how to ssh into ec2 
+*** how to ssh into ec2
 *** how to change .pem permissions (chmod)
 gives a permission error exception if you can't access .pem
 *** how to use security groups
@@ -35,7 +35,7 @@ For machines
 *** Policies
 Govern permissions
 Define what each above groups can do
-*** Leas privilege principle 
+*** Leas privilege principle
 Give minimal permissions to users they need to get job done
 *** Permissions
 **** 0644 <key_name> are too open
@@ -48,7 +48,7 @@ They work only within their region ( if you switch region, you have to recreate 
 They 'live' outside EC2 - they don't run on instances
 Defaults: all inbound is blocked and all outbound is allowed
 You can reference other security groups / CIDR blocks / IP addresses
-You CANNOT reference DNS names 
+You CANNOT reference DNS names
 * EC2
 Elastic compute cloud
 ** Cannot see IP of customer going through load balancer
@@ -58,7 +58,7 @@ to check the port check 'X-Forwarded-Port'
 ** Custom AMI
 Customers can spin up their own versions of OS
 with custom setup/software/access etc
-** T2 Instances 
+** T2 Instances
 They are burstable :
 they have 'cpu credits', and under unexpected load
 they can perform very well, unless they run out of cpu creds
@@ -104,7 +104,7 @@ systemctl start httpd.service
 systemctl enable httpd.service
 * Load Balancers
 ** Can scale but need to 'warm up'
-** CLB/ALB/NLB has a static host name 
+** CLB/ALB/NLB has a static host name
 Do not resolve and use underlying IP
 ** Provide SSL certs & SSL termination (Classic and ALB)
 ** Types
@@ -114,7 +114,7 @@ v2 application / network balancer
 ELB can perform health check on instance
 Done on PORT & ROUTE ( /health )
 ** Application Load Balancer (v2)
-Layer 7 
+Layer 7
 Can route based on hostname / path
 Great fit with ECS (Docker)
 Can handle/serve multiple groups/apps
@@ -138,8 +138,8 @@ Auto Scaling Groups
 Free!
 Can scale based on CloudWatch alarms
 Its possible to set up custom metrics for CloudWatch
-ASG use launch configurations 
-IAM roles attached to ASG are PASSED on to EC2 instances 
+ASG use launch configurations
+IAM roles attached to ASG are PASSED on to EC2 instances
 ** Metrics
 CPU
 Network
@@ -159,7 +159,7 @@ Data at rest is encrypted inside the volume
 Data moving between instance & volume is encrypted
 Snapshots created from this volume are encrypted
 ** Snapshots
-Snapshots take actual size not the whole provision of EBS 
+Snapshots take actual size not the whole provision of EBS
 Used for backups
 When you want to resize a volume down
 Change volume type
@@ -184,7 +184,7 @@ Use Alias over CNAME
 Managed DNS ( collection of records )
 DNS records get cached by browsers ( saved locally )
 ** Records:
-*** A: 
+*** A:
 url to ipv4
 *** AAAA:
 url to ipv6
@@ -207,7 +207,7 @@ Replicas can be promoted to their own DB
 Master has 'write/read', replicas only 'reads'
 ** Disaster recovery
 No need to UPDATE connection string ( so the failover is seemless )
-One DNS can be set to 'standby' 
+One DNS can be set to 'standby'
 Increases availability
 Failover in case of disaster ( replication is SYNC )
 No manual intervention
@@ -277,7 +277,7 @@ Load balancers
 Static websites
 Files
 Public authentication layers
-** Private subnets 
+** Private subnets
 Web app servers
 Databases
 ** Network Access Control Lists (ACLs)
@@ -316,13 +316,13 @@ They have a key
 *** Key
 Its a FULL path to an Object(file)
 <my_bucket>/my_file.txt
-*** Values 
+*** Values
 Content of the body of object
 Max size is 5TB
 If file > 5GB must use 'multi-part upload' !important
 *** Metadata
 List of text key / value pairs ( sys or user metadata )
-*** Tags 
+*** Tags
 Useful for security / lifecycle
 ** Versioning
 Enabled at bucket level
@@ -364,7 +364,7 @@ HTTP endpoint: not encrypted
 HTTPS endpoint: encryption in flight ( mandatory for SSE-C )
 ** Security
 *** User based
-IAM policies - which API calls should be allowed for a specific user 
+IAM policies - which API calls should be allowed for a specific user
 *** Resource based (more popular)
 Bucket policies - bucket wide policy from S3 console ( allows cross account )
 Use S3 policy to:
@@ -387,7 +387,7 @@ S3 access logs can be stored in other S3 bucket ( not the same - or you will hav
 API calls can be logged in AWS CloudTrail
 ** User Security
 MFA ( multi factor authentication ) can be enabled for file deletetion
-Signed URLs: valid only for a limited time 
+Signed URLs: valid only for a limited time
 ** S3 Websites
 <bucket-name>.s3-website-<AWS-region>.amazonaws.com
 <bucket-name>.s3-website.<AWS-region>.amazonaws.com
@@ -408,7 +408,7 @@ it will take some time before resource will be available
 Another example:
 DELETE 200 -> GET 200
 After deleting a resource, you might still be able to GET it for a short while
-EVENTUAL CONSISTENCY RULE 
+EVENTUAL CONSISTENCY RULE
 ** Performance !important
 *** If you have > 100 TPS performance might degrade
 For best performance you want your objects distributed between different partitions
@@ -431,8 +431,19 @@ You may have AWS limit for KMS usage ( 100s - 1000s download/upload per second)
 
 * =========
 * CLI
-* =========
-
+** S3
+*** copy to s3
+#+BEGIN_SRC bash
+  aws s3 cp /tmp/foo/ s3://bucket/
+#+END_SRC
+*** list all s3
+#+BEGIN_SRC bash
+  aws s3 ls
+#+END_SRC
+*** list contents of s3
+#+BEGIN_SRC bash
+  aws s3 ls s3://bucket_name
+#+END_SRC
 * Commands
 //configure cli
 aws configure  //afterwards put in both your keys in
@@ -440,7 +451,7 @@ aws configure  //afterwards put in both your keys in
 aws s3 ls s3://bucketofwitold
 //copy from bucket to bucket
 aws s3 cp s3://bucketofwitold/dog.jpg s3://mysecondbucketwitold
-//make bucket 
+//make bucket
 aws s3 mb s3://bucket-name-unique
 //remove bucket
 aws s3 rb s3://bucket-name-unique
@@ -484,20 +495,20 @@ Relies on CLOUD FORMATION under the hood
 *** Deployment modes
 **** Single instance
 Good for development
-1 instance + security group + elastic IP + auto scaling group in one AZ 
+1 instance + security group + elastic IP + auto scaling group in one AZ
 **** High Availability with Load Balancer
 Good for prod
 Elastic load balancer talk to ASG ( auto scale group )
 Multi instances auto scaled, across multi AZ, load balancer
 *** Update modes
 **** All at once
-Fastest, 
+Fastest,
 instances will be temporarily out ( there will be downtime )
 No cost
 **** Rolling
 Updates backet (N number of instances @ one time to be updated) at a time
 Moves to next bucket when the updated one is healthy
-Can take long time if many instances 
+Can take long time if many instances
 No cost
 Runs below capacity
 **** Rolling with additional batches
@@ -508,7 +519,7 @@ Runs at capacity
 **** Immutable
 Spin up new instances running updated app, in new ASG.
 Swap for old one when all is healthy
-Longest deployment time 
+Longest deployment time
 Great for prod
 Double capacity at a time
 No downtime
@@ -520,7 +531,9 @@ Redirect a bit of traffic using Route 53 to new environment ( weighted policy )
 When all is ok
 DNS changed when all is ok
 Takes long time to deploy
-*** Updating 
+YOU NEED TO USE Autoscaling group (you could provision instances manually, but thats crazy-don't)
+YOU NEED TO USE Load Balancer
+*** Updating
 New code has to be ZIPped
 All params can be set up within code
 Files have to be in a folder called, in the ROOT level of the application
@@ -528,7 +541,7 @@ File format: YAML / JSON
 Files must end with: .config extension
 You can change default settings using OPTION_SETTINGS parameter
 You can additional resources using those options
-#+BEGIN_SRC 
+#+BEGIN_SRC
 .ebextensions/
 #+END_SRC
 IF YOU DELETE environment, you will loose all .ebextension resources associated with it ( also RBS )
@@ -561,8 +574,8 @@ SSL Cert can be provisioned using ACM ( aws certificate manager) or CLI
 **** How to redirect HTTP -> HTTPS
 1) configure your instances to redirect
 OR
-2) configure the Application Load Balancer (alb ONLY!) with a rule 
-DO NOT REDIRECT HEALTH CHECKS ( or you will not get 200 ) 
+2) configure the Application Load Balancer (alb ONLY!) with a rule
+DO NOT REDIRECT HEALTH CHECKS ( or you will not get 200 )
 **** Lifecycle Policy
 Can store up to 1000 application versions
 Use lifecycle policy to phase out old versions:
@@ -630,7 +643,7 @@ CodeCommit can be integrated with
 - AWS SNS ( Simple Notification Service )
 - AWS Lambda
 - AWS CloudWatch Event Rules
-*** Notification 
+*** Notification
 Use cases:
 **** SNS / Lambda
 1) Push to existing branch
@@ -700,8 +713,8 @@ Application is pulled from GitHub / S3
 EC2 runs deployment instructions
 CodeDeploy agent reports success / failure of the deployment
 
-EC2 instances are grouped by deployment group ( example: dev / qa / prod )
-CodeDeploy can be chained into CodePipeline and use artifacts from there 
+EC2 instances are grouped by deployment group ( dev / qa / prod )
+CodeDeploy can be chained into CodePipeline and use artifacts from there
 CodeDeploy can reuse tools , autoscaling integrations, other apps
 Blue / Green works with EC2 instances ( but not with ON PREM )
 CodeDeploy supports AWS Lambdas
@@ -711,7 +724,7 @@ IN ROOT FOLDER !
 *** file section
 how to source & copy files from S3 / GitHub
 *** hooks ( can have timeouts )
-Not all of them have to be defined 
+Not all of them have to be defined
 deployment instructions
 **** ECS hooks
 ECS Hooks:
@@ -749,7 +762,7 @@ Custom ( eg 75% )
 If deploy fails, instance STAYS in fail state
 New deploy starts with failed instances
 To rollback : redeploy previous version OR enable automatic rollback for failures
-*** deployemnt target 
+*** deployemnt target
 EC2 instances with tags
 AutoScalingGroup (ASG)
 Mix of above
@@ -810,7 +823,7 @@ Makes SEPARATION OF CONCERNS easy ( you can have separate stack for VPC , networ
 Use if template configuration might change in future
 If parameter changes, you don't have to re-upload the whole template
 Parameters can be referenced anywhere in your template
-#+BEGIN_SRC 
+#+BEGIN_SRC
 Fn::Ref      ( short version: )   !Ref
 #+END_SRC
 ***** Pseudo Parameters
@@ -833,7 +846,7 @@ Fn::ImportValue     !ImportValue (shorthand)
 **** Template: Outputs
 Based on condition Resources can be created || Values output
 Conditions are on the same level as a resource TYPE that is to be created should condition evaluate to TRUE
-#+BEGIN_SRC 
+#+BEGIN_SRC
 Resources:
   MountPoint:
     Type: "AWS::EC2::VolumeAttachment"
@@ -849,11 +862,11 @@ Eg:
 #+END_SRC
 *** Intrinsic Functions
 **** Fn::Ref !important
-References parameter / resource 
+References parameter / resource
 Returns VALUE of param / ID of resource !
 **** Fn::GetAtt
 Gets RESOURCES attribute
-#+BEGIN_SRC 
+#+BEGIN_SRC
 !GetAtt ResourceName.attributeName
 #+END_SRC
 **** Fn::FindInMap
@@ -863,17 +876,17 @@ Get a value from specific key
 Import value of the param that has been EXPORTED
 **** Fn::Join
 Join a list of values with a specified delimiter
-#+BEGIN_SRC 
+#+BEGIN_SRC
 !Join [ delimiter, [comma-delimited list of values ] ]
 !Join [ : , [a,b,c]] ---> a:b:c
 #+END_SRC
 **** Fn::Sub
 Substitution
-#+BEGIN_SRC 
+#+BEGIN_SRC
 !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:vpc/${vpc}'
 #+END_SRC
 
-#+BEGIN_SRC 
+#+BEGIN_SRC
 Name: !Sub
   - www.${Domain}
   - { Domain: !Ref RootDomainName }
@@ -882,7 +895,7 @@ Name: !Sub
 *** Rollbacks
 **** Creation fail
 If stack creation fails: everything is rolled back ( default ) ie. everything gets deleted
-You can disable rollback 
+You can disable rollback
 **** Update fail
 Rolls back to last working state
 ** install code agent
@@ -985,7 +998,7 @@ Each application must have IAM right to write to X-RAY
 Tracks User activity & API usage
 Governance, audit, compliance for AWS Account
 Enabled by default
-History of events / API calls made out from my AWS account: 
+History of events / API calls made out from my AWS account:
 - Console
 - CLI
 - SDK
@@ -1000,7 +1013,7 @@ Below services can scale independently from the application
 Simple Queue Service
 PRODUCES send messages to SQS ( 1 to many )
 CONSUMERS poll SQS for messages ( 1 to many )
-Producers and Consumers are independent from each other, and can scale 
+Producers and Consumers are independent from each other, and can scale
 *** Standard Queue
 Fully managed
 From 1 to 10,000 messages a second
@@ -1030,7 +1043,7 @@ SQS sends back response to each message
 - Message identifier
 - MD5 hash of the body
 
-*** Consumers 
+*** Consumers
 They ask SQS for messages ( SQS doesn't push them )
 SQS will send up to 10 messages AT A TIME ( MAX !)
 Once the message is processed by the CONSUMER, consumer will use DeleteMessage API and remove it from SQS
@@ -1042,7 +1055,7 @@ DEFAULT is 30 seconds ( min: 0 s -- max: 12 hours )
 ChangeMessageVisibility API ( can be used to adjust the timer )
 DeleteMessage API ( tells SQS message can be deleted )
 
-*** Dead Letter Queue 
+*** Dead Letter Queue
 "Redrive policy" - treshold of retries to process message before it gets sent to DLQ
 ( if say message gets sent for processing 5 times, and keeps coming back, it's probably malformed ... send it to DLQ)
 
@@ -1053,7 +1066,7 @@ INCREASES efficiency of your application
 MIN 1s
 MAX 20s (recommended)
 Can be enabled at the Queue Level ||
-WaitTimeSeconds API 
+WaitTimeSeconds API
 
 *** FIFO Queue
 New offering
@@ -1092,7 +1105,7 @@ THERE IS NO BATCH ReceiveMessage ( you can set that for normal api -- up to 10 m
 ** SNS
 Simple Notification Service
 publisher / subscriber model
-Publisher sends notification to SNS and subscribers get notified 
+Publisher sends notification to SNS and subscribers get notified
 Up to 10 million subscriptions per topic
 100, 000 topics limit
 Each subscriber gets all the messages ( can be filtered )
@@ -1141,7 +1154,7 @@ Data is encoded using Base64
 1 shard = 2MB/s ( READ ! )
 You pay per shard ( even if not used !)
 Batching is available ( to lower cost )
-You can add ( re-shard ) / remove (merging) shards as needed 
+You can add ( re-shard ) / remove (merging) shards as needed
 Records are ordered PER SHARD ( SQS Standar - some order, FIFO - stictly ordered )
 **** API
 PutRecords
@@ -1152,7 +1165,7 @@ To avoid sending data to the same shard (hot shard/partition), use HIGHLY DISTRI
 Example:
 if you use user_id as key...it will be highly distributed
 if you use country_id, and most of your users are in one country...hash of that key will be the same, and data will flow to the same shard
-You can use CLI, SDK, AWS console to call API's, 
+You can use CLI, SDK, AWS console to call API's,
 You can use Client  libraries ( KCL - kinesis client library )
 **** 'ProvisionedThroughputExceeded' exception
 If you go over throughput limit
@@ -1197,7 +1210,7 @@ Free 1million requests & 400,000GB of compute time
 Integrated with the full AWS stack ( can be used anywhere )
 Integreated with all major languages
 Monitoring via CloudWatch
-You can allocate RAM size to functions 
+You can allocate RAM size to functions
 DEFAULT time out is 3 seconds ( MAX 300s )
 Memory: 128MG - 3GB
 Ability to deploy in VPC
@@ -1257,7 +1270,7 @@ Replication across 3 AZ
 NoSQL
 Fast and consistent
 Distributed
-Integrated with IAM for authrorization, security 
+Integrated with IAM for authrorization, security
 Event driven programming with DynamoDB streams
 Low cost
 Auto scales
@@ -1265,7 +1278,7 @@ Auto scales
 MAX 256 tables per region
 Made out of tables
 Each TABLE has PRIMARY key
-ITEMS = ROWS 
+ITEMS = ROWS
 Each item has attributes ( can be added over time, be null )
 MAX Size of item = 400KB ( a lot for a single row )
 *** Primary key
@@ -1275,7 +1288,7 @@ Should be 'diverse' so entries get spread wide
 1) Partition key + sort key
 ** Throuput !important
 You have to set the throuput yourself
-You can set auto scaling option 
+You can set auto scaling option
 Throuput can be exceeded for a short time using "burst credit"
 "ProvisionedThrouputException" -- when you are over your T & out of "burst credits"
 Use exponential backof retry setting !
@@ -1288,7 +1301,7 @@ RCU & WCU are spread evenly across partitions
 *** Read Capacity Units
 1 RCU = 1 SCR OR 2 ECR for an item up to 4kb
 **** Eventually Consistent Read ( Default )
-If you read the same data after writing it, you can get old data 
+If you read the same data after writing it, you can get old data
 because replication does takes time
 **** Strongly Consistent Read
 You will get consistent reads, even if you query for data you just wrote
@@ -1307,7 +1320,7 @@ Solution:
 Full replace ! or create
 Consumes WCU
 **** UpdateItem
-Partial replace 
+Partial replace
 **** Conditional Updates
 Update/replace data only if given condition is met
 Useful in situation when two updates occurr at the same time ( helps with concurrent access to items )
@@ -1388,7 +1401,7 @@ You can run local Dynamo for development on your computer
 KMS at rest\
 SSL/TSL at flight
 IAM for authorization
-VPC available 
+VPC available
 
 * API GATEWAY
 Lambda + API = no infrastructure to manage
@@ -1422,7 +1435,7 @@ Stage vars help define what the code does, and where it points
 Redirect % of traffic to updated API to test it
 Used mostly for prod
 Metrics & logs are separate for each version of api being tested
-Like blue / green deployment in Lambda 
+Like blue / green deployment in Lambda
 ** Mapping Templates !important
 Used to modify requests
 Rename params
@@ -1437,7 +1450,7 @@ DEFAULT live : 300 seconds ( 5 MIN )
 MIN 0, MAX: 3600 seconds ( 1h )
 Cache is defined per STAGE ( so dev can have different cache then prod )
 Cache can be encrypted
-MIN size: 0.5 GB 
+MIN size: 0.5 GB
 MAX size: 237 GB
 You can override cache for specific methods
 You can flush whole cashe from console
@@ -1445,8 +1458,8 @@ Client with proper IAM authorization CAN FLUSH CASH ( header: Cache-Control: max
 ** Logging
 You can enable CloudWatch at stage level
 Metric are also available as well as Access Logging
-You can integrate XRAY as well 
-** CORS 
+You can integrate XRAY as well
+** CORS
 must be enabled if you receive calls from different domain
 OPTIONS pre-flight request must contain headers:
 - Access-Control-Allow-Methods
@@ -1455,9 +1468,9 @@ OPTIONS pre-flight request must contain headers:
 CORS can be enabled from console
 ** Usage plan
 You can limit number of calls and throttle traffic ( capacity and burst capacity )
-You can limit total number of requests pay day etc 
+You can limit total number of requests pay day etc
 You can associate limits with stages
-Generate API keys: 
+Generate API keys:
 One key per customer
 Associate API with stages
 ** Security
@@ -1489,14 +1502,14 @@ Passes token in header of request
 Gateway takes token and checks against Cognito
 
 YOU MUST IMPLEMENT YOUR OWN AUTHORIZATION LAYER IN THE BACK END on your own ( cognito will not handle it for you )
-** Cognito 
+** Cognito
 *** User Pools ( CUP )
 Serverless database for users of your app ( login & passwords )
 Simple login functionality
 Can verify emails, handles MFA
 Can handle Federated Identities ( Facebook, Google, SAML)
 Sends back Jason Web Token ( JWT )
-Can be integrated with Gateway for authentication 
+Can be integrated with Gateway for authentication
 
 *** Identity Pools
 Provides DIRECT access from CLIENT side ( no proxies, no nothing, straight through )
@@ -1514,7 +1527,7 @@ Can help run Lambda, Gateway, Dynamo locally
 Egxample:
 Transform: 'AWS::Serverless-2016-10-31'
 
-** use package & deploy when processing template 
+** use package & deploy when processing template
 cloudformation package
 cloudformation deploy
 
@@ -1537,25 +1550,25 @@ EC2 runs special AMI which in turn runs ECS agent ( Docker container )
 ECS agent registers the instance to the ECS cluster
 
 ** ECS Task Definitions
-Metadata in JSON format 
+Metadata in JSON format
 Tells ECS how to run Docker Container
 You have to provide TASK ROLE ( if container can't do something, it's probably because it doesn't have a task role)
 They have to have IAM Roles to execute against AWS ( EC2 instances don't need roles )
 Security groups operate on INSTANCE LEVEL not TASK level, so each instance has to have its own sec group
 
-** Dynamic host port mapping 
+** Dynamic host port mapping
 Available only with Application Load Balancer ( Classic LB can't do it )
 It automatically pics up 'random' ports spinned up by the docker images, and map them.
 If you want to run multiple containers ( of the same type ) on the same EC2 instance, YOU CANNOT SET HOST PORT MANUALLY ( set only container port )
 
 ** ECR
-Elastic Container Registry 
+Elastic Container Registry
 Amazon's repository for docker images
 
 *** Push commands
 1) log in to ECR ( cli )
 
-Integrated with IAM 
+Integrated with IAM
 If it doesn't work, check IAM permissions!
 
 //LINUX/MAC
@@ -1572,7 +1585,7 @@ docker tag <name>:latest 489210310983.dkr.ecr.eu-west-1.amazonaws.com/<name>:lat
 docker push 489210310983.dkr.ecr.eu-west-1.amazonaws.com/<name>:latest
 
 //pull
-1) login 
+1) login
 2) docker pull aws uri of the docker image
 
 ** Fargate
@@ -1582,7 +1595,7 @@ Fargate provisions instances and gives them ENI
 Specify spec ( CPU / RAM )
 Fargate tasks can have IAM Roles which are used to execute agains AWS
 
-** Integrations 
+** Integrations
 *** X-Ray
 You need to run separate container with task definition to run X-Ray
 
@@ -1651,7 +1664,7 @@ Define which account can access the role
 Use STS ( Security Token Service ) to get creds and access role ( ASSUMEROLE API )
 Temp creds can be  valid between 15 min up to 1 h
 * OTHER
-** CloudFront 
+** CloudFront
 Its a CDN ( content delivery network )
 Improves performance / availability / fully encrypted
 Content cached
