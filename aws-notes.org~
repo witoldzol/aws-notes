@@ -1068,25 +1068,6 @@ Can be encrypted at rest & in-transit
 * IAM
 Identity and Access Management
 It's global ( not locked to a zone / region )
-* Kinesis
-Streaming real life data
-Producer: crates data
-Stream Store: stores / analyses data
-Consumer: consumes data
-** types
-*** Data stream
-Captures, process, store data streams real-time
-*** Data Firehose
-Use for moving data from A to B
-S3 || RedShift
-*** Data Analytics
-Analyze streaming data in real-time with SQL/Java
-*** Video Stream
-Capture, process, store video stream
-** shards
-1 shard =
-write: 1MB/s || 1000 records/s
-read: 2MB/S
 * Lambda
 On demand
 Virtual functions
@@ -1322,8 +1303,6 @@ real time streaming model
 Streams big data
 Great for IoT, logs, metrics etc
 Data automatically replicated to 3 Availability Zones
-*** iterator
-You need stream iterator in order to retrieve data
 *** Kinesis Streams !important
 Low latency streaming at scale
 Divided into ordered SHARDS / partitions
@@ -1675,16 +1654,6 @@ They 'live' outside EC2 - they don't run on instances
 Defaults: all inbound is blocked and all outbound is allowed
 You can reference other security groups / CIDR blocks / IP addresses
 You CANNOT reference DNS names
-* SDK
-** default credentials provider chain
-to authorize sdk  you can use:
-- aws credentials on your local computer
-- instance profile credentials using AIM Roles (on EC2 machine etc)
-- environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
-** Exponential backoff
-Included in SDK
-For rate limited api's
-Each retry will take x2 of the previous delay before trying again
 * Serverless
 We don't manage the server
 - Lambda
@@ -1695,6 +1664,16 @@ We don't manage the server
 - AWS Cognito
 - AWS API Gateway
 - AWS Kinesis
+* SDK
+** default credentials provider chain
+to authorize sdk  you can use:
+- aws credentials on your local computer
+- instance profile credentials using AIM Roles (on EC2 machine etc)
+- environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
+** Exponential backoff
+Included in SDK
+For rate limited api's
+Each retry will take x2 of the previous delay before trying again
 * STS command line
 Security Token Service
 aws sts decode-authorization-message --encoded-message
@@ -1789,23 +1768,3 @@ Used for updating / patching
 One way traffic - traffic can enter only if it originated from PRIVATE subnet
 MUST be in public subnet
 MUST be part of the private subnet rout table
-* XRay
-Use X-Ray SDK in your application code
-X-Ray Daemon on instance will send data to X-Ray CLI
-You can see visualisation / data in the aws console
-** Daemon
-Runs on EC2 that runs app
-EC2 needs role policy that enables access to X-ray
-** integrations
-- EC2
-- Lambda
-- Elastic Load Balancing
-- API Gateway
-- Elastic Beanstalk
-** supported platforms
-- Java
-- Go
-- .NET
-- Ruby
-- Python
-- nodeJS
