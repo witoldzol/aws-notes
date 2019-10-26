@@ -1069,10 +1069,10 @@ Can be encrypted at rest & in-transit
 Identity and Access Management
 It's global ( not locked to a zone / region )
 * Kinesis
-Streaming real life data
-Producer: crates data
-Stream Store: stores / analyses data
-Consumer: consumes data
+real time streaming model
+Streams big data
+Great for IoT, logs, metrics etc
+Data automatically replicated to 3 Availability Zones
 ** types
 *** Data stream
 Captures, process, store data streams real-time
@@ -1087,6 +1087,60 @@ Capture, process, store video stream
 1 shard =
 write: 1MB/s || 1000 records/s
 read: 2MB/S
+
+** iterator
+You need stream iterator in order to retrieve data
+** Kinesis Streams !important
+Low latency streaming at scale
+Divided into ordered SHARDS / partitions
+More shards = more data throughput ( you can always add more )
+DEFAULT data retention: 1 day ( MAX 7 days )
+Allows reprocessing / replaying of data ( as opposed to SQS -- once data is processed, its gone )
+Multiple applications can consume the same stream
+Data in Kinesis is immutable ( cannot be modified )
+Data is encoded using Base64
+**** Shard
+1 shard = 1MB/s || 1000 messages/s   ( per SHARD ) WRITE!
+1 shard = 2MB/s ( READ ! )
+You pay per shard ( even if not used !)
+Batching is available ( to lower cost )
+You can add ( re-shard ) / remove (merging) shards as needed
+Records are ordered PER SHARD ( SQS Standar - some order, FIFO - stictly ordered )
+**** API
+PutRecords
+You can use batching for lower cost and higher throughput
+MessageKey is added to the data, and hashed
+It is used to determine where to send the data ( to which shard )
+To avoid sending data to the same shard (hot shard/partition), use HIGHLY DISTRIBUTED KEY !important
+Example:
+if you use user_id as key...it will be highly distributed
+if you use country_id, and most of your users are in one country...hash of that key will be the same, and data will flow to the same shard
+You can use CLI, SDK, AWS console to call API's,
+You can use Client  libraries ( KCL - kinesis client library )
+**** 'ProvisionedThroughputExceeded' exception
+If you go over throughput limit
+Solutions:
+- use highly distributed MESSAGE KEY
+- retries with backoff
+- re-shard (scale)
+
+** Kinesis Analytics
+Real time analysis on streams using SQL
+Fully manages, no need to provision servers
+Pay for usage / consumption ( as opposed to shards )
+You can create new streams from analytics
+** Kinesis Firehose
+Load streams to S3, ElasticSearch...
+Fully managed, auto scaling
+Supports many formats of data
+Pay for usage ( what goes through it)
+** Kinesis Security
+Authorization with IAM
+Encription at flight using HTTPS
+At REST using KMS
+You can encrypt on Client Side
+VPC endpoints are AVAILABLE ( unlike SQS )
+
 * Lambda
 On demand
 Virtual functions
@@ -1317,63 +1371,6 @@ Push once to SNS and have many SQS subscribe to it
 Fully decoupled
 No data loss
 
-** Kinesis
-real time streaming model
-Streams big data
-Great for IoT, logs, metrics etc
-Data automatically replicated to 3 Availability Zones
-*** iterator
-You need stream iterator in order to retrieve data
-*** Kinesis Streams !important
-Low latency streaming at scale
-Divided into ordered SHARDS / partitions
-More shards = more data throughput ( you can always add more )
-DEFAULT data retention: 1 day ( MAX 7 days )
-Allows reprocessing / replaying of data ( as opposed to SQS -- once data is processed, its gone )
-Multiple applications can consume the same stream
-Data in Kinesis is immutable ( cannot be modified )
-Data is encoded using Base64
-**** Shard
-1 shard = 1MB/s || 1000 messages/s   ( per SHARD ) WRITE!
-1 shard = 2MB/s ( READ ! )
-You pay per shard ( even if not used !)
-Batching is available ( to lower cost )
-You can add ( re-shard ) / remove (merging) shards as needed
-Records are ordered PER SHARD ( SQS Standar - some order, FIFO - stictly ordered )
-**** API
-PutRecords
-You can use batching for lower cost and higher throughput
-MessageKey is added to the data, and hashed
-It is used to determine where to send the data ( to which shard )
-To avoid sending data to the same shard (hot shard/partition), use HIGHLY DISTRIBUTED KEY !important
-Example:
-if you use user_id as key...it will be highly distributed
-if you use country_id, and most of your users are in one country...hash of that key will be the same, and data will flow to the same shard
-You can use CLI, SDK, AWS console to call API's,
-You can use Client  libraries ( KCL - kinesis client library )
-**** 'ProvisionedThroughputExceeded' exception
-If you go over throughput limit
-Solutions:
-- use highly distributed MESSAGE KEY
-- retries with backoff
-- re-shard (scale)
-
-*** Kinesis Analytics
-Real time analysis on streams using SQL
-Fully manages, no need to provision servers
-Pay for usage / consumption ( as opposed to shards )
-You can create new streams from analytics
-*** Kinesis Firehose
-Load streams to S3, ElasticSearch...
-Fully managed, auto scaling
-Supports many formats of data
-Pay for usage ( what goes through it)
-*** Kinesis Security
-Authorization with IAM
-Encription at flight using HTTPS
-At REST using KMS
-You can encrypt on Client Side
-VPC endpoints are AVAILABLE ( unlike SQS )
 * Monitoring
 * OpsWorks
 ** Lifecycle events
