@@ -435,7 +435,7 @@ CloudTrail for API calls tracing
 ** buildspec.yml
 Must be at the ROOT of the code
 Contains variables ( plaintext or SSM param store )
-*** Phases
+*** Stages
 Install : gets dependencies
 Pre-build : final commands before build
 Build : actual build commands
@@ -504,6 +504,12 @@ Use cases:
 3) CloudWatch Event Rules goes into an SNS topic ( sns - simple notification service)
 4) CloudWatch will send email notification
 * CodeDeploy
+Automates deployments to:
+- EC2
+- On prem
+- Lambda
+- ECS
+
 Each EC2 ( or On Premise machine ) MUST run CodeDeploy Agent
 Agent keeps asking CodeDeploy for work
 CodeDeploy points at APPSPEC.YML !important
@@ -515,7 +521,6 @@ EC2 instances are grouped by deployment group ( dev / qa / prod )
 CodeDeploy can be chained into CodePipeline and use artifacts from there
 CodeDeploy can reuse tools , autoscaling integrations, other apps
 Blue / Green works with EC2 instances ( but not with ON PREM )
-CodeDeploy supports AWS Lambdas
 CodeDeploy DOES NOT provision resources ( EC2 instances are assumed to already exist! )
 ** appspec.yml !important
 IN ROOT FOLDER !
@@ -587,7 +592,14 @@ DEPLOYMENT_GROUP_NAME variable for extra config
   sudo ./install auto
   sudo service codedeploy-agent status
 #+END_SRC
+** deployment configurations:
+*** OnaAtATime
+*** HalfAtATime
+*** AllAtOnce
+*** Custom
 * CodePipeline
+Handles triggers between stages
+Supports CROSS-ACCOUNT
 Each stage generates 'artifacts' that are stored in S3 bucket ( and passed from there to next stage )
 Each change in state generates CloudWatch Events which in turn can create SNS notification ( you can create events for failed pipelines )
 On failure at any stage, pipeline stops
@@ -629,6 +641,27 @@ aws ec2 run-instances --image-id ami-030dbca661d402413 --instance-type t2.micro
 ** Redshift: OLAP - analytic processing ( data warehouseing )
 ** Neptune: Graph database
 ** DMS: Database Migration Service
+* Deployments
+** In-place
+stop all & deploy to all
+** Rolling
+take offline a subsection & update bit by bit
+** Rolling with adittional batches
+create a subsection with old version
+take offline & update old versions
+remove additial batch
+** Canary
+redirect part of your traffic to new version
+** Blue / Green
+Green is production environment
+Blue is NEW version environment
+Use Route 53 to redirect from B to G by swapping URL
+** Red / Black
+Red is production
+Black is new version
+Switch from 0 to 100 ( unlike blue/green where you can keep both versions running at the same time)
+** Immutable
+Creates new instances instead of updating old ones
 * DynamoDB
 Fully managed
 Replication across 3 AZ
@@ -953,6 +986,17 @@ Media processing workflows
 Content Management
 Can be connected to multiple EC2
 Can be used by on-premises servers ( good for migration )
+* Exam notes
+** CI & CD
+Continuous DELIVERY -> there is a MANUAL check before deployping to production ( automatically delivers to YOU for approval )
+Continuous DEPLOYMENT -> automatically deploys to production
+
+4 stages:
+Source -> CodeCommit
+Build -> CodeBuild ( alternative to Jenkins )
+Test -> CodeBuild ( alternative to Jenkins )
+Deploy -> CodeDeploy
+
 * Elastic Beanstalk
 Relies on CLOUD FORMATION under the hood
 *** 3 Components
@@ -1068,79 +1112,6 @@ Can be encrypted at rest & in-transit
 * IAM
 Identity and Access Management
 It's global ( not locked to a zone / region )
-* Kinesis
-real time streaming model
-Streams big data
-Great for IoT, logs, metrics etc
-Data automatically replicated to 3 Availability Zones
-** types
-*** Data stream
-Captures, process, store data streams real-time
-*** Data Firehose
-Use for moving data from A to B
-S3 || RedShift
-*** Data Analytics
-Analyze streaming data in real-time with SQL/Java
-*** Video Stream
-Capture, process, store video stream
-** shards
-1 shard =
-write: 1MB/s || 1000 records/s
-read: 2MB/S
-
-** iterator
-You need stream iterator in order to retrieve data
-** Kinesis Streams !important
-Low latency streaming at scale
-Divided into ordered SHARDS / partitions
-More shards = more data throughput ( you can always add more )
-DEFAULT data retention: 1 day ( MAX 7 days )
-Allows reprocessing / replaying of data ( as opposed to SQS -- once data is processed, its gone )
-Multiple applications can consume the same stream
-Data in Kinesis is immutable ( cannot be modified )
-Data is encoded using Base64
-**** Shard
-1 shard = 1MB/s || 1000 messages/s   ( per SHARD ) WRITE!
-1 shard = 2MB/s ( READ ! )
-You pay per shard ( even if not used !)
-Batching is available ( to lower cost )
-You can add ( re-shard ) / remove (merging) shards as needed
-Records are ordered PER SHARD ( SQS Standar - some order, FIFO - stictly ordered )
-**** API
-PutRecords
-You can use batching for lower cost and higher throughput
-MessageKey is added to the data, and hashed
-It is used to determine where to send the data ( to which shard )
-To avoid sending data to the same shard (hot shard/partition), use HIGHLY DISTRIBUTED KEY !important
-Example:
-if you use user_id as key...it will be highly distributed
-if you use country_id, and most of your users are in one country...hash of that key will be the same, and data will flow to the same shard
-You can use CLI, SDK, AWS console to call API's,
-You can use Client  libraries ( KCL - kinesis client library )
-**** 'ProvisionedThroughputExceeded' exception
-If you go over throughput limit
-Solutions:
-- use highly distributed MESSAGE KEY
-- retries with backoff
-- re-shard (scale)
-
-** Kinesis Analytics
-Real time analysis on streams using SQL
-Fully manages, no need to provision servers
-Pay for usage / consumption ( as opposed to shards )
-You can create new streams from analytics
-** Kinesis Firehose
-Load streams to S3, ElasticSearch...
-Fully managed, auto scaling
-Supports many formats of data
-Pay for usage ( what goes through it)
-** Kinesis Security
-Authorization with IAM
-Encription at flight using HTTPS
-At REST using KMS
-You can encrypt on Client Side
-VPC endpoints are AVAILABLE ( unlike SQS )
-
 * Lambda
 On demand
 Virtual functions
@@ -1371,6 +1342,78 @@ Push once to SNS and have many SQS subscribe to it
 Fully decoupled
 No data loss
 
+** Kinesis
+real time streaming model
+Streams big data
+Great for IoT, logs, metrics etc
+Data automatically replicated to 3 Availability Zones
+*** iterator
+You need stream iterator in order to retrieve data
+*** Kinesis Streams !important
+Low latency streaming at scale
+Divided into ordered SHARDS / partitions
+More shards = more data throughput ( you can always add more )
+DEFAULT data retention: 1 day ( MAX 7 days )
+Allows reprocessing / replaying of data ( as opposed to SQS -- once data is processed, its gone )
+Multiple applications can consume the same stream
+Data in Kinesis is immutable ( cannot be modified )
+Data is encoded using Base64
+**** Shard
+1 shard = 1MB/s || 1000 messages/s   ( per SHARD ) WRITE!
+1 shard = 2MB/s ( READ ! )
+You pay per shard ( even if not used !)
+Batching is available ( to lower cost )
+You can add ( re-shard ) / remove (merging) shards as needed
+Records are ordered PER SHARD ( SQS Standar - some order, FIFO - stictly ordered )
+**** API
+PutRecords
+You can use batching for lower cost and higher throughput
+MessageKey is added to the data, and hashed
+It is used to determine where to send the data ( to which shard )
+To avoid sending data to the same shard (hot shard/partition), use HIGHLY DISTRIBUTED KEY !important
+Example:
+if you use user_id as key...it will be highly distributed
+if you use country_id, and most of your users are in one country...hash of that key will be the same, and data will flow to the same shard
+You can use CLI, SDK, AWS console to call API's,
+You can use Client  libraries ( KCL - kinesis client library )
+**** API examples
+aaa
+# Kinesis List streams
+aws kinesis list-streams
+
+# Put-Record in Kinesis
+aws kinesis put-record --stream-name kplabs-stream --partition-key 123 --data "Hello from KPLABS"
+aws kinesis put-record --stream-name kplabs-test --partition-key 123 --data "Hello from KPLABS second time"
+
+# Getting the shard iterator
+aws kinesis get-shard-iterator --shard-id shardId-000000000000 --shard-iterator-type TRIM_HORIZON --stream-name kplabs-streams
+
+# Fetch Records with shard iterator
+aws kinesis get-records --shard-iterator ---
+
+**** 'ProvisionedThroughputExceeded' exception
+If you go over throughput limit
+Solutions:
+- use highly distributed MESSAGE KEY
+- retries with backoff
+- re-shard (scale)
+
+*** Kinesis Analytics
+Real time analysis on streams using SQL
+Fully manages, no need to provision servers
+Pay for usage / consumption ( as opposed to shards )
+You can create new streams from analytics
+*** Kinesis Firehose
+Load streams to S3, ElasticSearch...
+Fully managed, auto scaling
+Supports many formats of data
+Pay for usage ( what goes through it)
+*** Kinesis Security
+Authorization with IAM
+Encription at flight using HTTPS
+At REST using KMS
+You can encrypt on Client Side
+VPC endpoints are AVAILABLE ( unlike SQS )
 * Monitoring
 * OpsWorks
 ** Lifecycle events
@@ -1672,16 +1715,6 @@ They 'live' outside EC2 - they don't run on instances
 Defaults: all inbound is blocked and all outbound is allowed
 You can reference other security groups / CIDR blocks / IP addresses
 You CANNOT reference DNS names
-* SDK
-** default credentials provider chain
-to authorize sdk  you can use:
-- aws credentials on your local computer
-- instance profile credentials using AIM Roles (on EC2 machine etc)
-- environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
-** Exponential backoff
-Included in SDK
-For rate limited api's
-Each retry will take x2 of the previous delay before trying again
 * Serverless
 We don't manage the server
 - Lambda
@@ -1692,6 +1725,16 @@ We don't manage the server
 - AWS Cognito
 - AWS API Gateway
 - AWS Kinesis
+* SDK
+** default credentials provider chain
+to authorize sdk  you can use:
+- aws credentials on your local computer
+- instance profile credentials using AIM Roles (on EC2 machine etc)
+- environment variables (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY)
+** Exponential backoff
+Included in SDK
+For rate limited api's
+Each retry will take x2 of the previous delay before trying again
 * STS command line
 Security Token Service
 aws sts decode-authorization-message --encoded-message
@@ -1740,6 +1783,11 @@ Define role in IAM for another account to access
 Define which account can access the role
 Use STS ( Security Token Service ) to get creds and access role ( ASSUMEROLE API )
 Temp creds can be  valid between 15 min up to 1 h
+* Testing
+CI -> Development -> Unit test / Static code analysis
+CI -> Build -> Integration tests / Regression tests
+CD -> Staging -> Load tests / Performance tests
+CD -> Production -> A/B tests / Canary analysis
 * VPC
 Virtual Private Cloud
 Tied to a region
@@ -1786,23 +1834,4 @@ Used for updating / patching
 One way traffic - traffic can enter only if it originated from PRIVATE subnet
 MUST be in public subnet
 MUST be part of the private subnet rout table
-* XRay
-Use X-Ray SDK in your application code
-X-Ray Daemon on instance will send data to X-Ray CLI
-You can see visualisation / data in the aws console
-** Daemon
-Runs on EC2 that runs app
-EC2 needs role policy that enables access to X-ray
-** integrations
-- EC2
-- Lambda
-- Elastic Load Balancing
-- API Gateway
-- Elastic Beanstalk
-** supported platforms
-- Java
-- Go
-- .NET
-- Ruby
-- Python
-- nodeJS
+
