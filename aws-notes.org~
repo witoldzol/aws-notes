@@ -129,37 +129,11 @@ Can scale based on CloudWatch alarms
 Its possible to set up custom metrics for CloudWatch
 ASG use launch configurations
 IAM roles attached to ASG are PASSED on to EC2 instances
-** LifeCycle hooks
-Example: you want to scale in your auto scale group
-Before instance gets terminated, you want to save logs & deregister it from the main service
- 
-Hooks:
-// when starting an instance
-Pending -> Pending: Wait -> Pending:proceed -> InService
- 
-// when terminating
-Terminating -> Terminating: Wait -> Terminating: Proceed -> Terminated
- 
-CLI
-// run this once the action is completed ( you ran your scripts, saved logs, deregistered instance)
-Aws autoscaling complete-lifecycle-action
---lifecycle-hook-name SampleTerminateHook
---auto-scaling-group-name sample-group-name
---lifecycle-action-result CONTINUE
---instance-id <instance_id>
---region eu-east-1
 ** Metrics
 CPU
 Network
 Custom
 On schedule!
-* Batch
-Uses ECS to run jobs ( busybox by default )
-T2 instances ARE NOT SUPPORTED ( no free tier )
- 
-It has job queue ( sqs? )
-It has compute environment ( ec2 instances )
-You cannot delete compute envi before deleting job queue
 * CLI
 ** S3
 *** copy to s3
@@ -710,22 +684,6 @@ MAX Size of item = 400KB ( a lot for a single row )
 Key is hashed
 Should be 'diverse' so entries get spread wide
 1) Partition key + sort key
-** Global tables
-Create DB
-Enable ‘streams’
-Add region ( global tables tab)  ->
-this is where replica copy will be created  === 
-table will be created if there is NO TABLE WITH THAT NAME ( no duplicates allowed )
-The replication table will store ‘aws:rep:updateregion’ column by default ( it stores region of original update)
- 
-Default Attributes: -> do not alter them !
-Aws:rep:deleting
-Aws:rep:updatetime
-Aws:rep:updateregion
- 
-NO PARTIAL REPLICATION -> replicate all or nothing
-CONFLIC RESOLUTION: if two apps write to the same table/item -> in different regions -> LAST WRITER WINS rule is obeyed
-
 ** Throuput !important
 You have to set the throuput yourself
 You can set auto scaling option
@@ -842,16 +800,6 @@ KMS at rest\
 SSL/TSL at flight
 IAM for authorization
 VPC available
-** Streams
-Manage stream options:
-Keys only
-New image
-Old image ( old entry in db – before update )
-New & old images
- 
-Once you create you will get ‘stream ARN’
-You will need Lambda (dynamodb-process-stream) & give it role that allows access & select ‘starting position’ as ‘trim horizon’
-Every time there is an update in DynamoDB -> Lambda will get triggered -> DynamoDB operation will get saved to logs in CloudWatch
 * EBS Volume
 Network drives
 Only one EBS can be attached/detached to EC2's
@@ -1038,33 +986,6 @@ Media processing workflows
 Content Management
 Can be connected to multiple EC2
 Can be used by on-premises servers ( good for migration )
-Instances connect to EFS through MOUNT TARGET
-** mount target
-Mount target:
-Tied to availability zone
-Has its own IP address
-Has to be inside of a VPC
-Has to have a SEPARATE Security Group
-If region has 6 AZ’s -> you can have 6 Mount targets, each with its own SG & IP ( all in the same VPC)
-TOTAL EFS  size gets updated every METER hour ! ( not instantly – which has effect on billing )
-
-** Performance mode:
-- General purpose: best for most
-- Max I/O: optimized for MASSIVE amounts of instances connecting to the same EFS ->
-will have higher latencies for file operations ! but has better throughput IN AGGREGATE
-
-Usecases: Highly parallelized applications and workloads, such as big data analysis, media processing, and genomics analysis
-Use PercentIOLimit metric to decide = if you peak use MAXIO
-
-** Throughput mode:
-Bursting: best for most ( throughput SCALES with SIZE of store ) -> 
-any size can burst up to 100MB/s, FOR every TB of data you get 100MB/s ( 10TB = 1000MB/s throughput)
-Provisioned: when you KNOW how much you need...or absolutely cannot go down below treshhold
- 
-** connecting EC2 to EFS
-use EFS DNS number
-set inbound rule for SG of the EFS
- 
 * Exam notes
 ** CI & CD
 Continuous DELIVERY -> there is a MANUAL check before deployping to production ( automatically delivers to YOU for approval )
@@ -1191,24 +1112,6 @@ Can be encrypted at rest & in-transit
 * IAM
 Identity and Access Management
 It's global ( not locked to a zone / region )
-** Cross account roles
-You need to create role in Production account - > it will have reference to Identity account ( identity account number )
-This can be edited in ‘trust reslationships’.
-Role in production account needs to have access to execute tasks ( eg. S3 access )
-
-Trust relationship:
--- In production:
-Principal ( identity account + user = arn ) will have access to sts:AssumeRole
--- In identity:
-User needs to have permission to assume role ( Action: stsAssumeRole ) (resource: <production_arn_role > arn )
-
-Summary: 
-Create user in IDENTITY
-Create cross-account ROLE in PRODUCTION
-Create Role in IDENTITY that can use ROLE in PRODUCTION
-Log in to IDENTITY
-Switch to PRODUCTION using signed link
-
 * Lambda
 On demand
 Virtual functions
@@ -1273,24 +1176,11 @@ Encrypt passwords using KMS
 Never use recursive code !
 
 Dont use VPC unless you have to ( it takes longer if you do )
-* Licence Manager
-Helps you track & ENFORCE licences across multiple accounts
- 
-Can be used cross account
-Can be connected to SNS
- 
-3 Licence types:
-vCPU
-Cores
-Sockets
- 
-You have to  associate licence configuration with an AMI ( amazon machine image )
-( can be created from a running EC2 instance, most are provided by the vendor )
 * Linux commands
 ** install
 yum install
 ** switch to root
-   sudo su
+sudo su
 * Load Balancers
 ** Can scale but need to 'warm up'
 ** CLB/ALB/NLB has a static host name
@@ -1612,17 +1502,10 @@ Relational Database Services
 ** Replicas
 Applications MUST update the connection string to leverage read replicas!!
 Used for READ scaling !
-DB can have up to 5 replicas 
+DB can have up to 5 replicas within & across AZ or regions
 Replication is ASYNC !
 Replicas can be promoted to their own DB
 Master has 'write/read', replicas only 'reads'
-You HAVE to have automatic backups ON in your master IN ORDER to be able to create read replicas
-MAX 5 read replicas ( AURORA = 15 max ! ) within & across AZ or regions
-Make sure that read replica INSTANCE ( eg. T2 ) is AT LEAST AS LARGE as the master DB
-You can always increase size of your replica instance
-Monitor REPLICATION LAG -> very important metric
-Available for : MySQL, Postgre, MariaDB, Oracle & Aurora ( no Microsoft )
-
 ** Disaster recovery
 No need to UPDATE connection string ( so the failover is seemless )
 One DNS can be set to 'standby'
@@ -1747,16 +1630,6 @@ JSON based policies:
 *** Bucket Access Control List !ignore
 ** Networking
 S3 supports VPC Endpoints ( for instances in VPC without www internet )
-** Notifications
-You can enable in bucket notifications to:
-- SNS
-- SNS
-You need topic & be subscribed to it
-You need to attach policy TO SNS TOPIC that allows S3 to publish to SNS
-- Lambda
- 
-Example usage: you have a bucket for upload for clients
-On upload kick off lambda, do validations, respond to client etc
 ** Logging and Audit
 S3 access logs can be stored in other S3 bucket ( not the same - or you will have endless loop)
 API calls can be logged in AWS CloudTrail
@@ -1804,40 +1677,19 @@ It uses edge locations
 *** SSE-KMS Encryption can lower performance
 You may have AWS limit for KMS usage ( 100s - 1000s download/upload per second)
 * SAM
-JSON or YML format
 Severless Application Model
+YAML configuration
+Genrate CloudFormation from YAML file
+Can use CodeDeploy to deploy Lambdas
 Can help run Lambda, Gateway, Dynamo locally
-HAS TO HAVE header: Transform: 'AWS::Serverless-2016-10-31'
-You have to use SAM cli to UPLOAD template
-You can use CloudFormation or SAM cli to DEPLOY template to CloudFormation
-You have to upload the template to S3
-** deployment
-Create S3 bucket
-Package the template & define where it will be stored (s3)
-it will give you an output file that will have codeUri ( location of the package )
-Deploy the template to cloudformation ( you can use aws cloudformation cli OR  SAM cli )
-Important! : when deploying, make sure to define –capabilities CAPABILITY_IAM (otherwise deployment will fail)
+
+** Header - Transform
+Egxample:
+Transform: 'AWS::Serverless-2016-10-31'
+
 ** use package & deploy when processing template
 cloudformation package
 cloudformation deploy
-* Secrets Manager
-Creds for RDS database
-Creds for DocumentDB ( mongoDB compatible db )
-Creds for OTHER db’s
-Creds for REDSHIFT
-Other ( eg: API keys etc )
- 
-Built in integration for rotating keys for MySQL, POstrgre & Aurora ON RDS
-Versioning on keys, in case rotation breaks something
-Access control to keys/secrets based on IAM & resource policies
- 
-If you enable key rotation, it will be handled by a LAMBDA function - > 
-that lambda will need to be able to access RDS via security group -> you have to configure SECURITY GROUP
-If your DB is in a private VPC, you HAVE TO  put your lambda in that VPC as well
- 
-LAMBDA function for rotating secrets gets created only for MANAGED DB’s – 
-If you choose ‘other db’ then you will have to create your own lambda
-
 * SECURITY
 Never use root account ( except when first setting up )
 *** Users
@@ -1931,32 +1783,6 @@ Define role in IAM for another account to access
 Define which account can access the role
 Use STS ( Security Token Service ) to get creds and access role ( ASSUMEROLE API )
 Temp creds can be  valid between 15 min up to 1 h
-* SSM
-Simple Systems Manager
-You can manage windows & linux instances
-You have to run system manager agent on each instance
-You can execute RUN COMMAND on all instances at the same time
-You can save output of run command to S3 ( limit 2500 lines is displayed in console )
- 
-Instances will be displayed in ‘managed instances’ tab of SSM console
-EC2 instance ID will start with ‘I’ ( i-063766d532a2b8981 )
-On-prem or instances from other cloud providers will start with ‘mi’ ( mi-063766d532a2b8981). 
-Also, you will not be able to see instance name on the dashboard
-
-Session-manager allows you to select instance and ssh directly to it
-
-** hybrid (other cloud or on-prem)
-Hybrid activations ( instances from other – cloud or on-prem ) :
-You will get activation code & ID
-Install ssm agent on the on-prem/other-cloud instance
-Run command:
-Amazon-ssm-agent -register -code <code> -id <id> --region <region>
-
-There are two tiers:
-Standard tier: up to 1000 on-prem servers OR VM’s / per ACCOUNT per REGION
-Advanced tier: no limit
-You cannot use SESSION MANAGER with on-prem IF  you don’t have ADVANCED TIER
-
 * Testing
 CI -> Development -> Unit test / Static code analysis
 CI -> Build -> Integration tests / Regression tests
