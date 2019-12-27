@@ -1209,6 +1209,24 @@ Create Role in IDENTITY that can use ROLE in PRODUCTION
 Log in to IDENTITY
 Switch to PRODUCTION using signed link
 
+* Jenkins
+Master / Slave architecture
+You can have multi-AZ architecture for better availability
+Integrations examples:
+-- CodePipeline:
+CodeCommit -> CodePipeline -> Jenkins -> CodeDeploy
+Jenkins can replace CodeBuild & be invoked by CodePipeline
+Jenkins replaces CodeBuild
+-- ECS:
+CodeCommit -> Jenkins <-> ECR -> ECS
+Jenkins can be triggered by CC, interact with ECR to get docker images & deploy to ECS
+Jenkins replaces CodeBuild & CodeDeploy
+-- Device Farm:
+CC -> Jenkins -> AWS Device Farm ( test mobile app )
+-- Lambda:
+CC -> Jenkins -> Lambda -> Lambda 'does stuff'
+-- CloudFormation:
+CC -> Jenkins -> CloudFormation
 * Lambda
 On demand
 Virtual functions
