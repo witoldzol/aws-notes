@@ -203,12 +203,16 @@ It's FREE
 Easy to estimate cost of infrastructure created via Cloud Formation
 Helps to save ( destroy infrastrucutre in the evening and recreate it in the morning )
 Declarative programming ( Cloud Formation figures out the order of things and orchestration )
-Makes SEPARATION OF CONCERNS easy ( you can have separate stack for VPC , network, App stack ...)
+Makes SEPARATION OF CONCERNS easy ( you can have separate stack for VPC ,
+network, App stack ...)
+Almost all AWS resources are supported - reminder can be created using AWS
+Lambda Custom Resouces
 *** Templates
 - Have to be uploaded to S3
 - You can't edit them, upload NEW version, CF will figure out the difference between them
 - Stacks are identified by name
 - Deleting a stack will delete every associated artifact created by CF
+- You cannot dynamically create resources
 **** Deploying templates
 ***** Manual
 - Edit template in CloudFormation Designer
@@ -234,6 +238,22 @@ Makes SEPARATION OF CONCERNS easy ( you can have separate stack for VPC , networ
 ***** AWS::aws-product-name::data-type-name
 ***** YOU CANNOT CREATE DYNAMIC AMOUNT OF RESOURCES!
 ***** Almost every service is supported by CloudFormation
+***** Conditions
+Conditions are on the same level as a resource TYPE that is to be created should condition evaluate to TRUE
+#+BEGIN_SRC yaml
+  Resources:
+    MountPoint:
+      Type: "AWS::EC2::VolumeAttachment"
+      Condition: SomeConditionName
+#+END_SRC
+types of conditions: environment, region, parameter value... anything you want
+Conditions can referece other conditions
+Eg:
+#+BEGIN_SRC yaml
+  Condtions:
+     CreateProd: !Equals [ !Ref EnvType, prod ]
+//compares the two values in brackets
+#+END_SRC
 **** Template: Parameters
 Use if template configuration might change in future
 If parameter changes, you don't have to re-upload the whole template
@@ -247,38 +267,47 @@ AWS::AccountId
 **** Template: Mappings
 Fixed variables in CloudFormation Template
 Values are hardcoded in the template
+There are 2 levels of 'depth'
 Eg: region map with ami codes for each zone
 ***** Access mappings values
-Fn::FindInMap   || !FindInMap (shorthand version)
+Fn::FindInMap   || !FindInMap [MapName, TopLevelKey, SecondLevelKey]
+!FindInMap [RegionName, !Ref "AWS::Region", 32] => "ami-2943"
+#+begin_src yaml
+RegionName:
+  us-east-1:
+    "32": "ami-3943"
+    "64": "ami-3333"
+#+end_src
 **** Template: Outputs
 Optional values being exported from the template
 Outputs can be viewed in AWS Console or CLI
 Used for cross-stack collaboration ( each expert looks after their domain and outputs needed details used in other stacks)
 You CANNOT DELETE stack if it's output is being referenced in some other stack!
 Exporting value is OPTIONAL
+Based on condition Resources can be created || Values output
+#+begin_src yaml
+  Outputs:
+    StackSecurityGroup:
+      Description: Blah
+      Value: !Ref SecurityGroupNameFromThisStack
+      Export:
+        Name: ExportedSecurityGroupNameVisibleOutside
+#+end_src
 **** Template: Imports
 Fn::ImportValue     !ImportValue (shorthand)
-**** Template: Outputs
-Based on condition Resources can be created || Values output
-Conditions are on the same level as a resource TYPE that is to be created should condition evaluate to TRUE
-#+BEGIN_SRC
-Resources:
-  MountPoint:
-    Type: "AWS::EC2::VolumeAttachment"
-    Condition: SomeConditionName
-#+END_SRC
-types of conditions: environment, region, parameter value... anything you want
-Conditions can referece other conditions
-Eg:
-#+BEGIN_SRC javascript
-  Condtions:
-     CreateProd: !Equals [ !Ref EnvType, prod ]
-//compares the two values in brackets
-#+END_SRC
+#+begin_src yaml
+  Resources:
+    MyInstance:
+      Type: AWS::EC2::Instance
+      Properties:
+        SecurityGroups:
+          - !ImportValue: ExportedSecurityGroupNameVisibleOutside
+#+end_src
 *** Intrinsic Functions
 **** Fn::Ref !important
-References parameter / resource
-Returns VALUE of param / ID of resource !
+References: 
+parameter => returns value
+resource => returns physical ID of resource
 **** Fn::GetAtt
 Gets RESOURCES attribute
 #+BEGIN_SRC
@@ -307,6 +336,9 @@ Name: !Sub
   - { Domain: !Ref RootDomainName }
 #+END_SRC
 **** Conditions ( Fn::If, Fn::Else, Fn::Not, Fn::Equals ...)
+**** Fn::Base64
+Pass in the 'User data' used during EC2 initialization ( install scripts etc )
+User data script log is in : /var/log/cloud-init-output.log
 *** Rollbacks
 **** Creation fail
 If stack creation fails: everything is rolled back ( default ) ie. everything gets deleted
@@ -324,6 +356,287 @@ Policy: necessary execution right to deploy cf stack
 When resource is created its status is: COMPLETED
 That doesn't mean resource is READY!
 Use creation policy to wait for resource to be ready before marking it as Completed
+*** Deletion policy
+- Retain : you can apply to any resource / nested stack
+- Snapshot : EBS, ElastiCache, Replication Group, RDS, Redshift Cluster
+- Delete: default setting for all ( except RDS - it's default is snapshot )
+#+begin_src yaml
+  ---
+  Resources:
+    MySG:
+      Type: AWS::EC2::SecurityGroup
+      DeletionPolicy: Retain
+      Properties:
+        GroupDescription: Enable SSH access via port 22
+        SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: 22
+          IpProtocol: tcp
+          ToPort: 22
+
+    MyEBS:
+      Type: AWS::EC2::Volume
+      DeletionPolicy: Snapshot
+      Properties:
+        AvailabilityZone: us-east-1a
+        Size: 1
+        VolumeType: gp2
+#+end_src
+*** User Data
+Use !Base64 function
+Output of this script is stored on EC2 at var/log/cloud-init-output.log
+#+begin_src yaml
+  Fn::Base64: | # this pipe creates a string with newlines
+    #!/bin/bash -xe
+    yum update -y
+    yum install -y httpd
+    echo "Hello World"
+#+end_src
+
+**** cfn-init
+Alternative to pasting literal script - it might be more readable in this format
+CF creates EC2, EC2 runs cfn-init, cfn queries CF for instruction & runs them
+Output is stored in var/log/cfn-init.log
+# FOR DEBUGGING!
+Granual output of all commands is here: var/log/cfn-init-cmd.log
+#+begin_src yaml
+  UserData:
+    !Sub |
+      #!/bin/bash -xe
+      # Get the latest package from CloudFormation - you have to run it
+      yum update -y aws-cfn-bootstrap
+      # Start cfn-init
+      # MyInstance is the name of the resource being created
+      opt/aws/bin/cfn-init -s ${AWS::StackId} -r MyInstance --region ${AWS::Region} ||
+      error_exit 'Failed to run cfn-init'
+
+  MetaData:
+    Comment: Install apche http server & run page
+    AWS::CloudFormation::Init:
+      config:
+        packages:
+          yum:
+            httpd: []
+            files:
+              "var/www/html/index.html":
+                content: |
+                  <h1> Hellow World from apache server </h1>
+                mode: '000644' #read write execute permissions
+            commands:
+              hello:
+                command: "echo 'Hello world'"
+            services:
+              sysvinit:
+                httpd:
+                  enabled: 'true'
+                  ensureRunning: 'true'
+#+end_src
+
+**** Wait condition ( cfn-signal )
+***** use
+Use it to make the CF pause execution until it receives cfn-signal 
+#+begin_src yaml
+  UserData:
+      !Sub |
+        #!/bin/bash -xe
+        # Get the latest package from CloudFormation - you have to run it
+        yum update -y aws-cfn-bootstrap
+        # Start cfn-init
+        # MyInstance is the name of the resource being created
+        /opt/aws/bin/cfn-init -s ${AWS::StackId} -r MyInstance --region ${AWS::Region}
+        # Start cfn-signal -> set wait condition
+        /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource
+        SimpleWaitCondition --region ${AWS::Region}
+      
+  Metadata: same as above example
+
+  SimpleWaitCondition:
+    CreationPolicy:
+      ResourceSignal: #create resource signal
+        Timeout: PT2M #wait 2 minutes
+        Count: 1 #number of instances to signal
+    Type: AWS::CloudFormation::WaitCondition
+  
+#+end_src
+***** exam question !important
+Wait Condition didn't receive the required number of signals from EC2
+1) 
+   Ensure that the AMI you are using include helper scripts
+   If helper scripts are not included, you can install them yourself
+2) 
+   Verify cfn-init & cfn-signal ran correctly:
+   Look at logs: var/log/cfn-init.log & var/log/cloud-init.log
+3) 
+   To read the logs first you have to disable rollback on failure
+4) 
+   If our instance cannot talk to internet, it cannot talk to CF & send signal
+   Check if instance connected to internet:
+   If EC2 is in VPC &
+   - if it's in private subnet => it should connect through NAT
+   - if it's in public subnet => it should connect directly through Internet
+     Gateway
+   - to test connection: SSH & run curl command 
+#+begin_src bash
+  curl -I https://amazon.com # -I fetches only headers
+#+end_src
+
+*** Nested stacks
+Allow isolation of patterns
+Considered good practice
+To update, you have to update PARENT stack first ( DO NOT TOUCH NESTED STACK -
+intract only with the parent stack)
+CAPABILITY_AUTO_EXPAND is required to use nested stack
+#+begin_src yaml
+  Parameters:
+    SSHKey:
+      Type: AWS::EC2::KeyPair::KeyName
+      Description: Name of an existing EC2 KeyPair to enable SSH access to the instance
+  
+  Resources:
+    myStack:
+      Type: AWS::CloudFormation::Stack
+      Properties:
+        TemplateURL: https://s3.amazonaws.com/cloudformation-templates-us-east-1/LAMP_Single_Instance.template
+        Parameters:
+          KeyName: !Ref SSHKey
+          DBName: "mydb"
+          DBUser: "user"
+          DBPassword: "pass"
+          DBRootPassword: "passroot"
+          InstanceType: t2.micro
+          SSHLocation: "0.0.0.0/0"
+
+  Outputs:
+    StackRef:
+      Value: !Ref myStack
+    OutputFromNestedStack:
+      Value: !GetAtt myStack.Outputs.WebsiteURL
+#+end_src
+*** Parameters
+You can centralize your template params in SSM
+For example, keep default value of AMI number
+You still have to manually update stacks to apply changes tho
+Amazon provides public paths to the latest ami images
+#+begin_src yaml
+  Parameters:
+    MyLatestAMI:
+      Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+      Default: '/aws/default/ami'
+
+  Resources:
+    MyInstance:
+      Type: AWS::EC2::Instance
+      Parameters:
+        ImageId: !Ref MyLatestAMI
+        InstanceType: t2.micro
+      
+#+end_src
+*** Depends on
+Resource that depends on other resource, will be created after it
+Example: EC2 will only be created when DB is created
+#+begin_src yaml
+  Resources:
+    MyInstance:
+      Type: AWS::EC2::Instance
+      Properties:
+        ImageId: !Ref MyImage
+        DependsOn: MyDB
+    MyDB:
+      Type: AWS::RDS::DBInstance
+      Properties:
+        AllocatedStorage: 5
+        DBInstanceclass: db.t2.micro
+        Engine: MySQL
+#+end_src
+*** Lambda - inline
+#+begin_src yaml
+  Resources: 
+    ListBucketsS3Lambda: 
+      Type: "AWS::Lambda::Function"
+      Properties: 
+        Handler: "index.handler"
+        Role: 
+          Fn::GetAtt: 
+            - "LambdaExecutionRole"
+            - "Arn"
+        Runtime: "python3.7"
+        Code: 
+          ZipFile: |
+            import boto3
+
+            # Create an S3 client
+            s3 = boto3.client('s3')
+
+            def handler(event, context):
+              # Call S3 to list current buckets
+              response = s3.list_buckets()
+
+              # Get a list of all bucket names from the response
+              buckets = [bucket['Name'] for bucket in response['Buckets']]
+
+              # Print out the bucket list
+              print("Bucket List: %s" % buckets)
+
+              return buckets
+#+end_src
+*** Lambda - zip file
+If you upload new version to the same bucket & with same name
+CF will not detect changes & will not update
+#+begin_src yaml
+  Parameters:
+    S3BucketParam:
+      Type: String
+    S3KeyParam:
+      Type: String
+
+  Resources: 
+    LambdaExecutionRole:
+      Type: AWS::IAM::Role
+  ...
+
+    ListBucketsS3Lambda: 
+      Type: "AWS::Lambda::Function"
+      Properties: 
+        Handler: "index.handler"
+        Role: 
+          Fn::GetAtt: 
+            - "LambdaExecutionRole"
+            - "Arn"
+        Runtime: "python3.7"
+        Code: 
+          S3Bucket: !Ref S3BucketParam
+          S3Key: !Ref S3KeyParam
+        
+#+end_src
+*** lambda - zip & versioning
+Enable S3 versioning & pass in version number of the file to update lambda
+#+begin_src yaml
+  Parameters:
+    S3BucketParam:
+      Type: String
+    S3KeyParam:
+      Type: String
+    S3ObjectVersionParam:
+      Type: String
+
+  Resources:
+     ListBucketsS3Lambda: 
+      Type: "AWS::Lambda::Function"
+      Properties: 
+        Handler: "index.handler"
+        Role: 
+          Fn::GetAtt: 
+            - "LambdaExecutionRole"
+            - "Arn"
+        Runtime: "python3.7"
+        Code: 
+          S3Bucket: 
+            Ref: S3BucketParam
+          S3Key: 
+            Ref: S3KeyParam
+          S3ObjectVersion:
+            Ref: S3ObjectVersionParam
+#+end_src
 * CloudSearch
 Gives you managed search funtionality for your application
 Can be run on:
@@ -1209,24 +1522,6 @@ Create Role in IDENTITY that can use ROLE in PRODUCTION
 Log in to IDENTITY
 Switch to PRODUCTION using signed link
 
-* Jenkins
-Master / Slave architecture
-You can have multi-AZ architecture for better availability
-Integrations examples:
--- CodePipeline:
-CodeCommit -> CodePipeline -> Jenkins -> CodeDeploy
-Jenkins can replace CodeBuild & be invoked by CodePipeline
-Jenkins replaces CodeBuild
--- ECS:
-CodeCommit -> Jenkins <-> ECR -> ECS
-Jenkins can be triggered by CC, interact with ECR to get docker images & deploy to ECS
-Jenkins replaces CodeBuild & CodeDeploy
--- Device Farm:
-CC -> Jenkins -> AWS Device Farm ( test mobile app )
--- Lambda:
-CC -> Jenkins -> Lambda -> Lambda 'does stuff'
--- CloudFormation:
-CC -> Jenkins -> CloudFormation
 * Lambda
 On demand
 Virtual functions
@@ -1686,6 +1981,7 @@ More expensive but also more efficient
 * S3
 Simple Storage Service
 No directories ( just keys )
+You cannot delte unless its empty
 ** Buckets
 Defined @ regional level BUT must have UNIQUE name GLOBALLY !
 *** Naming convention:
