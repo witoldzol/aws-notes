@@ -548,169 +548,95 @@ Example: EC2 will only be created when DB is created
         DBInstanceclass: db.t2.micro
         Engine: MySQL
 #+end_src
-*** Lambda
-**** Lambda - inline
- #+begin_src yaml
-   Resources: 
-     ListBucketsS3Lambda: 
-       Type: "AWS::Lambda::Function"
-       Properties: 
-         Handler: "index.handler"
-         Role: 
-           Fn::GetAtt: 
-             - "LambdaExecutionRole"
-             - "Arn"
-         Runtime: "python3.7"
-         Code: 
-           ZipFile: |
-             import boto3
+*** Lambda - inline
+#+begin_src yaml
+  Resources: 
+    ListBucketsS3Lambda: 
+      Type: "AWS::Lambda::Function"
+      Properties: 
+        Handler: "index.handler"
+        Role: 
+          Fn::GetAtt: 
+            - "LambdaExecutionRole"
+            - "Arn"
+        Runtime: "python3.7"
+        Code: 
+          ZipFile: |
+            import boto3
 
-             # Create an S3 client
-             s3 = boto3.client('s3')
+            # Create an S3 client
+            s3 = boto3.client('s3')
 
-             def handler(event, context):
-               # Call S3 to list current buckets
-               response = s3.list_buckets()
+            def handler(event, context):
+              # Call S3 to list current buckets
+              response = s3.list_buckets()
 
-               # Get a list of all bucket names from the response
-               buckets = [bucket['Name'] for bucket in response['Buckets']]
+              # Get a list of all bucket names from the response
+              buckets = [bucket['Name'] for bucket in response['Buckets']]
 
-               # Print out the bucket list
-               print("Bucket List: %s" % buckets)
+              # Print out the bucket list
+              print("Bucket List: %s" % buckets)
 
-               return buckets
- #+end_src
-**** Lambda - zip file
- If you upload new version to the same bucket & with same name
- CF will not detect changes & will not update
- #+begin_src yaml
-   Parameters:
-     S3BucketParam:
-       Type: String
-     S3KeyParam:
-       Type: String
+              return buckets
+#+end_src
+*** Lambda - zip file
+If you upload new version to the same bucket & with same name
+CF will not detect changes & will not update
+#+begin_src yaml
+  Parameters:
+    S3BucketParam:
+      Type: String
+    S3KeyParam:
+      Type: String
 
-   Resources: 
-     LambdaExecutionRole:
-       Type: AWS::IAM::Role
-   ...
+  Resources: 
+    LambdaExecutionRole:
+      Type: AWS::IAM::Role
+  ...
 
-     ListBucketsS3Lambda: 
-       Type: "AWS::Lambda::Function"
-       Properties: 
-         Handler: "index.handler"
-         Role: 
-           Fn::GetAtt: 
-             - "LambdaExecutionRole"
-             - "Arn"
-         Runtime: "python3.7"
-         Code: 
-           S3Bucket: !Ref S3BucketParam
-           S3Key: !Ref S3KeyParam
+    ListBucketsS3Lambda: 
+      Type: "AWS::Lambda::Function"
+      Properties: 
+        Handler: "index.handler"
+        Role: 
+          Fn::GetAtt: 
+            - "LambdaExecutionRole"
+            - "Arn"
+        Runtime: "python3.7"
+        Code: 
+          S3Bucket: !Ref S3BucketParam
+          S3Key: !Ref S3KeyParam
         
- #+end_src
-**** lambda - zip & versioning
- Enable S3 versioning & pass in version number of the file to update lambda
- #+begin_src yaml
-   Parameters:
-     S3BucketParam:
-       Type: String
-     S3KeyParam:
-       Type: String
-     S3ObjectVersionParam:
-       Type: String
+#+end_src
+*** lambda - zip & versioning
+Enable S3 versioning & pass in version number of the file to update lambda
+#+begin_src yaml
+  Parameters:
+    S3BucketParam:
+      Type: String
+    S3KeyParam:
+      Type: String
+    S3ObjectVersionParam:
+      Type: String
 
-   Resources:
-      ListBucketsS3Lambda: 
-       Type: "AWS::Lambda::Function"
-       Properties: 
-         Handler: "index.handler"
-         Role: 
-           Fn::GetAtt: 
-             - "LambdaExecutionRole"
-             - "Arn"
-         Runtime: "python3.7"
-         Code: 
-           S3Bucket: 
-             Ref: S3BucketParam
-           S3Key: 
-             Ref: S3KeyParam
-           S3ObjectVersion:
-             Ref: S3ObjectVersionParam
- #+end_src
-
-*** Custome resource
-**** Use cases
-- new AWS service is not covered yet
-- On-Premise resource
-- Empty S3 before delteting it
-- Fetch AMI id (this is the 'old' way to do it) ( new way is to use SSM param store )
-- Anything really
-Craete CF template
-Define Custom Resource
-CR will execute lambda function every time CF is updated, created, deleted
-Update/create/delete action can happen ONLY on Custom Resource - otherwise action will not trigger lambda
-Lambda can do whatever, call any api or service..
-**** Example
-Lambda that deletes contents of the S3 bucket
-1) Craete lambda itself wiht IAM role & export its arn
-2) Create S3 &  custom resource that references the lambda
-3) When custom resource gets created/destroyed - it will run lambda
-4) Lambda itself will filter signals and run only on destruction
-#+BEGIN_SRC yaml
----
-AWSTemplateFormatVersion: '2010-09-09'
-
-Resources:
-  myBucketResource:
-    Type: AWS::S3::Bucket
-
-  LambdaUsedToCleanUp:
-    Type: Custom::cleanupbucket
-    Properties:
-      ServiceToken: !ImportValue EmptyS3BucketLambda
-      BucketName: !Ref myBucketResource
-#+END_SRC
-*** Drift
-You can check if your stack has drifted from original configuration
-If someone made manuall changes, ex: added rules to Security Groups,
-you will be able to view modifications & original settings
-*** UPDATE_ROLLBACK_FAILED !important
-When you update stack, update fails & rollback fails
-You can use 'continue rolling back' action once you resolve error
-**** Causes / errors:
-***** Failed to receive expected number of signals
-Use signal-resource api to manually send missing signal & continue rollback
-***** Changes made to resources outside of CF
-Ex: you manually deleted DB and CF is trying to roll back to it
-Manually recreate/sync resources to match the template & run 'continue'
-***** Insufficient permissions
-Ex: You can create S3 but not modify it 
-Fix your permissions & run continue
-***** Invalid security token
-NO CHANGES required, run continue which will refresh credentials
-***** Limitation error
-Ex: you have limit of 20 EC2's, but rollback puts you above it
-Increase limit or delete resources - then continue
-***** Resource did not stabilize
-Resource did not respond because of timeout or AWS service was interrupted
-Run continue when resource is ready / service is back to normal
-***** You can skip resources that need to be rolled back ( if you cannot resolve issue )
-*** InsufficientCapabilitiesException
-CAPABILITIES_IAM
-CF validates template & if IAM resources are included then it will ask for your permission to create them
-Its a safe check that you are aware of IAM resouce being created and that you've given minimum responsibilities to them
-It has nothing to do with the template or with user permissions
-CF needs capability to create IAM resource in order to create stack
-**** cli ( create-stack & udpate-stack )
---capabilities CAPABILITY_IAM || CAPABILITY_NAMED_IAM ( you have to use latter for custom named iam resources )
-**** api ( CreateStack & UpdateStack )
-Capabilities.member.1=CAPABILITY_IAM  ||
-Capabilities.member.1=CAPABILITY_NAMED_IAM. 
-*** Custom names for IAM resources
-Don't create multiple stacks from same template that has custom named iam R
-IAM resources are GLOBAL & even if stacks are in different regions they might use the same iam resources
-Ex: you delete one stack & it will tear down iam resource & modify other stacks in other regions
+  Resources:
+     ListBucketsS3Lambda: 
+      Type: "AWS::Lambda::Function"
+      Properties: 
+        Handler: "index.handler"
+        Role: 
+          Fn::GetAtt: 
+            - "LambdaExecutionRole"
+            - "Arn"
+        Runtime: "python3.7"
+        Code: 
+          S3Bucket: 
+            Ref: S3BucketParam
+          S3Key: 
+            Ref: S3KeyParam
+          S3ObjectVersion:
+            Ref: S3ObjectVersionParam
+#+end_src
 * CloudSearch
 Gives you managed search funtionality for your application
 Can be run on:
