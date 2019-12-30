@@ -431,7 +431,6 @@ Granual output of all commands is here: var/log/cfn-init-cmd.log
                   enabled: 'true'
                   ensureRunning: 'true'
 #+end_src
-
 **** Wait condition ( cfn-signal )
 ***** use
 Use it to make the CF pause execution until it receives cfn-signal 
@@ -479,7 +478,10 @@ Wait Condition didn't receive the required number of signals from EC2
 #+begin_src bash
   curl -I https://amazon.com # -I fetches only headers
 #+end_src
-
+*** cfn-hup
+Runs daemon on EC2 that checks for changes to instance metadata
+If changes detected, it will run cfn-init script
+default checks every 15min
 *** Nested stacks
 Allow isolation of patterns
 Considered good practice
@@ -711,6 +713,61 @@ Capabilities.member.1=CAPABILITY_NAMED_IAM.
 Don't create multiple stacks from same template that has custom named iam R
 IAM resources are GLOBAL & even if stacks are in different regions they might use the same iam resources
 Ex: you delete one stack & it will tear down iam resource & modify other stacks in other regions
+*** .ebextensions 
+**** Resources
+You can define resources to be created in .ebextensions
+Ex: .ebextensions/my-resources.config
+Resources defined here are TIED to the stack, if stack goes, so do the resources
+Ex: you probably DON'T want to put your DB here...unles you want to recycle it with the stack
+#+BEGIN_SRC yaml
+Resources:
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      KeySchema:
+         HashKeyElement:
+           AttributeName: id
+           AttributeType: S
+      # create a table with the least available rd and wr throughput
+      ProvisionedThroughput:
+         ReadCapacityUnits: 1
+         WriteCapacityUnits: 1
+#+END_SRC
+**** Environment variables
+You can export values to environment using .config
+Values get resolved at runtime!
+#+BEGIN_SRC yaml
+option_settings:
+  aws:elasticbeanstalk:application:environment:
+    # these are assigned dynamically during a deployment
+    NOTIFICATION_TOPIC: '`{"Ref" : "NotificationTopic"}`'
+    DYNAMODB_TABLE: '`{"Ref" : "DynamoDBTable"}`'
+    AWS_REGION: '`{"Ref" : "AWS::Region"}`'
+#+END_SRC
+**** Commands
+Execute on EC2
+Commands run BEFORE the application / server is set up & app version files are extracted
+#+BEGIN_SRC yaml
+commands:
+  create-hello-world-file:
+    command: touch hello-world.txt
+    cwd: /home/ec2-user 
+#+END_SRC
+**** Container Commands
+They affect your application SOURCE CODE
+They run AFTER your app & server have been set up & app version archive have been extracted
+BUT before app version has been deployed!
+#+BEGIN_SRC yaml
+container_commands:
+  modify-index-html:
+    command: 'echo "- modified content" >> index.html'
+  
+  database-migration:
+    command: 'echo "do db migration"'
+    //runs this command only on a single instance
+    //use leader_only to run commands that need to be executed only once ( like db migration )
+    leader_only: true 
+#+END_SRC
 * CloudSearch
 Gives you managed search funtionality for your application
 Can be run on:
