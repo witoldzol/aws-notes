@@ -713,61 +713,6 @@ Capabilities.member.1=CAPABILITY_NAMED_IAM.
 Don't create multiple stacks from same template that has custom named iam R
 IAM resources are GLOBAL & even if stacks are in different regions they might use the same iam resources
 Ex: you delete one stack & it will tear down iam resource & modify other stacks in other regions
-*** .ebextensions 
-**** Resources
-You can define resources to be created in .ebextensions
-Ex: .ebextensions/my-resources.config
-Resources defined here are TIED to the stack, if stack goes, so do the resources
-Ex: you probably DON'T want to put your DB here...unles you want to recycle it with the stack
-#+BEGIN_SRC yaml
-Resources:
-  DynamoDBTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      KeySchema:
-         HashKeyElement:
-           AttributeName: id
-           AttributeType: S
-      # create a table with the least available rd and wr throughput
-      ProvisionedThroughput:
-         ReadCapacityUnits: 1
-         WriteCapacityUnits: 1
-#+END_SRC
-**** Environment variables
-You can export values to environment using .config
-Values get resolved at runtime!
-#+BEGIN_SRC yaml
-option_settings:
-  aws:elasticbeanstalk:application:environment:
-    # these are assigned dynamically during a deployment
-    NOTIFICATION_TOPIC: '`{"Ref" : "NotificationTopic"}`'
-    DYNAMODB_TABLE: '`{"Ref" : "DynamoDBTable"}`'
-    AWS_REGION: '`{"Ref" : "AWS::Region"}`'
-#+END_SRC
-**** Commands
-Execute on EC2
-Commands run BEFORE the application / server is set up & app version files are extracted
-#+BEGIN_SRC yaml
-commands:
-  create-hello-world-file:
-    command: touch hello-world.txt
-    cwd: /home/ec2-user 
-#+END_SRC
-**** Container Commands
-They affect your application SOURCE CODE
-They run AFTER your app & server have been set up & app version archive have been extracted
-BUT before app version has been deployed!
-#+BEGIN_SRC yaml
-container_commands:
-  modify-index-html:
-    command: 'echo "- modified content" >> index.html'
-  
-  database-migration:
-    command: 'echo "do db migration"'
-    //runs this command only on a single instance
-    //use leader_only to run commands that need to be executed only once ( like db migration )
-    leader_only: true 
-#+END_SRC
 * CloudSearch
 Gives you managed search funtionality for your application
 Can be run on:
@@ -1522,11 +1467,20 @@ Deploy -> CodeDeploy
 
 * Elastic Beanstalk
 Relies on CLOUD FORMATION under the hood
+*** Application version lifecycles
+You can have max 1000 versions of an app
+You can set lifecycle by max number or days
+You can retain source bundle in S3
+*** Rebuild environment
+Will DELETE everything & rebuild
+*** Managed updates
+When enabled, EB will automatically patch & update instances - 
+it can even scrap & rebuild instances if you allow it
 *** 3 Components
 **** Application
 **** Application version
 **** Environment name (dev, test, prod)
-*** Deployment modes
+*** Deployment modes !important
 **** Single instance
 Good for development
 1 instance + security group + elastic IP + auto scaling group in one AZ
@@ -1534,39 +1488,56 @@ Good for development
 Good for prod
 Elastic load balancer talk to ASG ( auto scale group )
 Multi instances auto scaled, across multi AZ, load balancer
-*** Update modes
-**** All at once
-Fastest,
-instances will be temporarily out ( there will be downtime )
-No cost
-**** Rolling
-Updates backet (N number of instances @ one time to be updated) at a time
-Moves to next bucket when the updated one is healthy
-Can take long time if many instances
-No cost
-Runs below capacity
-**** Rolling with additional batches
-Spins up a batch to serve all content while the bucket is being updated ( no hit to performance )
-Additional cost (extra instances spinned up to cover downed instances )
-No downtime
-Runs at capacity
-**** Immutable
-Spin up new instances running updated app, in new ASG.
-Swap for old one when all is healthy
-Longest deployment time
-Great for prod
-Double capacity at a time
-No downtime
-High extra cost
+**** Update modes
+***** All at once
+ Fastest,
+ instances will be temporarily out ( there will be downtime )
+ No cost
+***** Rolling
+ Updates backet (N number of instances @ one time to be updated) at a time
+ Moves to next bucket when the updated one is healthy
+ Can take long time if many instances
+ No cost
+ Runs below capacity
+***** Rolling with additional batches
+ Spins up a batch to serve all content while the bucket is being updated ( no hit to performance )
+ Additional cost (extra instances spinned up to cover downed instances )
+ No downtime
+ Runs at capacity
+***** Immutable
+1) Create temp ASG
+2) Create ONE instance in temp ASG
+3) If new EC2 is healthy, create remining instances
+4) Move instances from temp to current ASG
+5) Terminate old instances & temp ASG
+ Longest deployment time
+ Great for prod
+ Double capacity at a time
+ No downtime
+ High extra cost
+***** Blue / Green
+ Deploy new environment ( unlike immutable which happens in the same env )
+ Spin up 100 % extra instances with new code
+ Redirect a bit of traffic using Route 53 to new environment ( weighted policy )
+ When all is ok
+ DNS changed when all is ok
+ Takes long time to deploy
+ YOU NEED TO USE Autoscaling group (you could provision instances manually, but thats crazy-don't)
+ YOU NEED TO USE Load Balancer
+**** Application deployments
+ Source code changes / software configuration updates
+ These updates DONT replace infrastructure
+**** Configuration updates
+  Virtual machine settings / VPC configuration
+  These updates REPLACE infrastructure
+  - Disabled
+  - Rolling based on Health
+  - Rolling based on Time
+  - Immutable
 **** Blue / Green
-Deploy new environment
-Spin up 100 % extra instances with new code
-Redirect a bit of traffic using Route 53 to new environment ( weighted policy )
-When all is ok
-DNS changed when all is ok
-Takes long time to deploy
-YOU NEED TO USE Autoscaling group (you could provision instances manually, but thats crazy-don't)
-YOU NEED TO USE Load Balancer
+   You can swap URL's pointing to environments - changes CNAME & DNS routing
+   Takes few minutes to resolve
+
 *** Updating
 New code has to be ZIPped
 All params can be set up within code
@@ -1590,14 +1561,26 @@ Last step takes the longes ( if lots of deps )
 
 TO INCREASE SPEED, PACKAGE DEPENDENCIES WITH SOURCE CODE
 *** CLI
-**** commands
-eb deploy
-eb create
-eb status
-eb health
-eb open
-...
-**** helpful for automated deployment pipelines
+*** config
+located in .elasticbeanstalk folder
+EB CLI commands
+*** saved configurations
+stored in .elasticbeanstalk/saved_configs/<dev-env.cfg.yml>
+# save config to local & remote
+eb config save dev-env --cfg <my-config>
+# set env var directly in eb environment
+eb setenv NAME_OF_OUR_ENV=some-value
+# update config & save it
+eb config put <prod>
+# update current environment with a new config
+# updated dev-env environment with prod config
+eb config <dev-env> --cfg <prod>
+*** prececedence of configurations
+If you set value in two places, the HIGHEST precedence is applied
+1) Settings applied directly to the env ( console, cli )
+2) Saved configurations
+3) .ebextensions
+4) default values
 *** Exam tips !important
 **** Can work with https
 Load SSL cert on to the Load Balancer
@@ -1627,6 +1610,76 @@ You can migrate coupled DB from EB to standalone RDS:
 4) perform blue / green deployment and swap new and old environments
 5) terminate old env ( rds wont get deleted bcs of protection setting )
 6) delete cloud formation stack
+*** .ebextensions 
+**** Resources
+You can define resources to be created in .ebextensions
+Ex: .ebextensions/my-resources.config
+Resources defined here are TIED to the stack, if stack goes, so do the resources
+Ex: you probably DON'T want to put your DB here...unles you want to recycle it with the stack
+#+BEGIN_SRC yaml
+Resources:
+  DynamoDBTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      KeySchema:
+         HashKeyElement:
+           AttributeName: id
+           AttributeType: S
+      # create a table with the least available rd and wr throughput
+      ProvisionedThroughput:
+         ReadCapacityUnits: 1
+         WriteCapacityUnits: 1
+#+END_SRC
+**** Environment variables
+You can export values to environment using .config
+Values get resolved at runtime!
+#+BEGIN_SRC yaml
+option_settings:
+  aws:elasticbeanstalk:application:environment:
+    # these are assigned dynamically during a deployment
+    NOTIFICATION_TOPIC: '`{"Ref" : "NotificationTopic"}`'
+    DYNAMODB_TABLE: '`{"Ref" : "DynamoDBTable"}`'
+    AWS_REGION: '`{"Ref" : "AWS::Region"}`'
+#+END_SRC
+**** Commands
+Execute on EC2
+Commands run BEFORE the application / server is set up & app version files are extracted
+#+BEGIN_SRC yaml
+commands:
+  create-hello-world-file:
+    command: touch hello-world.txt
+    cwd: /home/ec2-user 
+#+END_SRC !Important
+**** Container Commands !Important
+They affect your application SOURCE CODE
+Runs after the web server has been set up,
+AND after your application code has been unpacked to the staging folder, 
+BUT before your application has been "deployed"
+
+#+BEGIN_SRC yaml
+container_commands:
+  modify-index-html:
+    command: 'echo "- modified content" >> index.html'
+  
+  database-migration:
+    command: 'echo "do db migration"'
+    //runs this command only on a single instance
+    //use leader_only to run commands that need to be executed only once ( like db migration )
+    //available only for CONTAINER_COMMANDS 
+    leader_only: true 
+#+END_SRC
+
+*** Worker Environment
+Use for long running processes
+Unlike server, Worker can:
+1) Pull items from a queue
+2) Perform scheduled jobs defined in cron.yaml
+*** Docker container (multicontainer docker setup)
+Dockerrun.aws.json file describes how to deploy docker containers as an EB
+application
+Ex: describes containers to be deployed to each container instance (EC2 that
+hosts docker containers) as well as volumes to be created & mounted
+
 * ElastiCache
 In memory version of RDS ( Redis / Memcached )
 Has Read & Write scaling ( Replicas / Sharding )
