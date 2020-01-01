@@ -2076,11 +2076,21 @@ Can help against DDNS attacks
 Supports RMTP algo encryptions
 
 ** Step Functions
-Orchestration of lambdas ( visual )
+Orchestration of services
 Max execution of 1 year
-Use cases:
-order fulfilment
-data processng etc
+*** State machine definition
+JSON file that describes the flow of the process
+Can be visualized
+*** Use cases
+- transcode media files
+- sequence batch processing jobs ( DNA sequencing )
+- send messages from automated workflows ( manual approval step to continue )
+- publish events from serverless workflows ( send notification to mobile if error )
+- coordinate container tasks in microservices & serverless apps
+ ( make decision which service to use to best deal with given data / object )
+- coordinate session-based applications ( payment, decrement stock, order for shipping .. )
+- sequence steps of machine learning
+- coordinate EXTRACT, TRANSFORM, LOAD jobs (ETL) ( glue different jobs & services into one flow )
 
 ** SWF
 Coordinates work between applications
@@ -2317,7 +2327,7 @@ Easier way for creating & deploying 'serverless' applications
 JSON or YML format
 Allows you to  run Lambda, Gateway, Dynamo LOCALLY using DOCKER
 Allows you to run LOCALLY API GATEWAY to test your lambda for example
-** HAS TO HAVE header: Transform: 'AWS::Serverless-2016-10-31'
+HAS TO HAVE header: Transform: 'AWS::Serverless-2016-10-31'
 You have to use SAM cli to UPLOAD template to S3
 You can use CloudFormation or SAM cli to DEPLOY template to CloudFormation
 ** deployment
@@ -2326,9 +2336,7 @@ Package the template & define where it will be stored (s3)
 it will give you an output file that will have codeUri ( location of the package )
 Deploy the template to cloudformation ( you can use aws cloudformation cli OR  SAM cli )
 Important! : when deploying, make sure to define –capabilities CAPABILITY_IAM (otherwise deployment will fail)
-** use package & deploy when processing template
-cloudformation package
-cloudformation deploy
+Sam can use CodeDeploy to deploy & test your lambda ( can even use canary / linear deployment )
 * Secrets Manager
 Creds for RDS database
 Creds for DocumentDB ( mongoDB compatible db )
