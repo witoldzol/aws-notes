@@ -2313,13 +2313,13 @@ It uses edge locations
 *** SSE-KMS Encryption can lower performance
 You may have AWS limit for KMS usage ( 100s - 1000s download/upload per second)
 * SAM
+Easier way for creating & deploying 'serverless' applications
 JSON or YML format
-Severless Application Model
-Can help run Lambda, Gateway, Dynamo locally
-HAS TO HAVE header: Transform: 'AWS::Serverless-2016-10-31'
-You have to use SAM cli to UPLOAD template
+Allows you to  run Lambda, Gateway, Dynamo LOCALLY using DOCKER
+Allows you to run LOCALLY API GATEWAY to test your lambda for example
+** HAS TO HAVE header: Transform: 'AWS::Serverless-2016-10-31'
+You have to use SAM cli to UPLOAD template to S3
 You can use CloudFormation or SAM cli to DEPLOY template to CloudFormation
-You have to upload the template to S3
 ** deployment
 Create S3 bucket
 Package the template & define where it will be stored (s3)
