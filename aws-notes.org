@@ -1712,13 +1712,12 @@ Virtual functions
 No servers to manage
 Automated scaling
 Pay per invocation & execution time
-Free 1million requests & 400,000GB of compute time
+Free 1 million requests & 400,000GB of compute time
 Integrated with the full AWS stack ( can be used anywhere )
 Integreated with all major languages
 Monitoring via CloudWatch
 You can allocate RAM size to functions
 DEFAULT time out is 3 seconds ( MAX 300s )
-Memory: 128MG - 3GB
 Ability to deploy in VPC
 IAM role has to be attached to function
 ** Concurrency
@@ -1735,10 +1734,10 @@ Metrics are stored in CloudWatch Metrics
 Make sure Lambda has IAM access to write to CloudWatch
 
 X-ray can be enabled for Lambda ( daemon is handled by AWS )
-Set up IAM for x-ray...
+
 ** Limits
 Memory: 128 - 3008MB (64MB increments)
-Max execution time: 5 min
+Max execution time: 15 min
 Disc capacity 512MB ( in /tmp folder )
 Concurrency limit: 1000 ( open support ticket to increase )
 
@@ -1747,18 +1746,24 @@ Lambda unzipped max size: 250MB
 You can use /tmp to go over the size limit
 Max size of environment variables 4Kb ( total )
 ** Versions
-When you work on lambda it is $LATEST version
+$LATEST version is MUTABLE
+Old versions CANNOT BE CHANGED ( code + configuration )
 Once you publish lambda:
 - it becomes immutable
 - it gets ARN
-- it gets version number ( increasing )
+- it gets version number 
+
+Version = code + configuration
 
 *** Aliases
 Aliases are mutable, and can point at specific versions
+You can SPLIT traffic between versions using alias ( blue/green ) 
+( can point at two versions simultaneously )
+( CodeDeploy uses this feature during 'linear' deployment ex: 10% every 1min )
+Aliases have their own ARNs
 
 ** Best practices !important
-
-Perform heavy duty outside of lambda :
+Perform heavy duty work outside of lambda :
 - connecting to DB
 - initializing SDK
 - pull in data / dependencies OUTSIDE of lambda function ( use execution context )
@@ -1770,6 +1775,12 @@ Encrypt passwords using KMS
 Never use recursive code !
 
 Dont use VPC unless you have to ( it takes longer if you do )
+** Security
+Lambda has to have IAM role that allows it to access other services:
+Params:
+- in console , encrypt env variables using KMS ( make sure lambda can access it )
+- SSM , use SDK to decrypt
+- SecretsManager , use SDK to decrypt
 * Licence Manager
 Helps you track & ENFORCE licences across multiple accounts
  
