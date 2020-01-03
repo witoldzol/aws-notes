@@ -19,7 +19,20 @@ Handles throttling
 Genereate SDK & api specs
 Cache API responses
 Creates API keys
-
+** Throttling
+You can be throttled at:
+- at the API level
+- at the Usage Plan level
+- at the lambda level
+*** Limits
+MAX 10,000 requests per second PER ACCOUNT
+MAX Bucket 5,000 at one milisecond
+You can define USAGE PLAN & assign api key to it
+Lambda can be a chockepoint as well (1000 concurent executions max)
+** Endpoint type !important
+- Regional ( no CDN in front of API - if most of your users are in your region, use this to lower latency )
+- Edge optimized ( gets deployed to all CloudFront locations, which will lower latency for users globally )
+- Private ( deployed within a VPC - YOU WILL NEED VPC endpoint to access it! )
 ** Integrations
 *** Outside VPC
 - Lambda
@@ -31,6 +44,10 @@ Creates API keys
 - Lambda
 - EC2
 ** Stage Deployments
+You have to DEPLOY to STAGE before changes take effect
+Each STAGE:
+- has its own configuration
+- history of deployments, so you can rollback 
 *** Stage Variables
 Act like env vars in API Gateway ( can change code behaviour )
 Use to change configiguration values
@@ -38,13 +55,17 @@ Use to define HTTP endpoints your STAGES talk to ( dev, test, prod )
 Pass configuration params
 Stage vars are passed to the CONTEX object in Lambda
 Stage vars help define what the code does, and where it points
+
+Example: use stage var to point at the LAMBDA ALIAS
+
 *** Canary deployment
 Redirect % of traffic to updated API to test it
 Used mostly for prod
 Metrics & logs are separate for each version of api being tested
 Like blue / green deployment in Lambda
 ** Mapping Templates !important
-Used to modify requests
+Used to modify requests / contents ( before it gets send to lambda for example )
+YOU CAN MODIFY RESPONSE coming back from lambda as well!
 Rename params
 Add headers
 We can use VLT ( velocity template language )
@@ -1309,20 +1330,23 @@ Set up logging at TASK DEFINITION level
 Each container can have a separate log stream
 
 ** CLI ECR
-//login
-aws ecr get-login
+Make sure INSTANCE ROLE (attached to EC2 running ecs image) 
+has permission to PULL from ECR! ( otherwise it wont be able to get images to start tasks)
 
-//pull
-docker pull <name>
+//build image - make sure you are inside folder with Dockerfile
+docker build -t <image-name> .
+
+//login -- generate temp login creds & sing in docker with ECR ( so we can push / pull )
+$(aws ecr get-login --no-include-email --region eu-west-1)
+
+//tag image ( rename to include your aws acc number etc )
+docker tag <image-name>:latest <aws-acc-number>.dkr.ecr.eu-west-1.amazonaws.com/<repository-name>:latest
 
 //push
 docker push <name>
 
-//build
-docker build -t demo
-
-//create service on ECS
-aws ecs create-service
+//pull
+docker pull <name>
 
 * ECS ( docker )
 Elastic Container Service
@@ -1337,21 +1361,20 @@ Private ( amazons ) repo for docker images
 
 ** ECS Clusters
 Logical grouping of EC2 instances:
-
 EC2 runs special AMI which in turn runs ECS agent ( Docker container )
 ECS agent registers the instance to the ECS cluster
 
 ** ECS Task Definitions
-Metadata in JSON format
 Tells ECS how to run Docker Container
+Metadata in JSON format
 You have to provide TASK ROLE ( if container can't do something, it's probably because it doesn't have a task role)
-They have to have IAM Roles to execute against AWS ( EC2 instances don't need roles )
 Security groups operate on INSTANCE LEVEL not TASK level, so each instance has to have its own sec group
-
 ** Dynamic host port mapping
 Available only with Application Load Balancer ( Classic LB can't do it )
 It automatically pics up 'random' ports spinned up by the docker images, and map them.
 If you want to run multiple containers ( of the same type ) on the same EC2 instance, YOU CANNOT SET HOST PORT MANUALLY ( set only container port )
+** ECS service
+Runs and maintains the tasks & associated ELB's
 * EC2 Elastic compute cloud
 NEVER PUT YOUR CREDENTIALS on EC2!!!
 Use IAM Roles to give credentials to EC2
@@ -2034,14 +2057,21 @@ You can encrypt on Client Side
 VPC endpoints are AVAILABLE ( unlike SQS )
 * Monitoring
 * OpsWorks
+** OpsWorks Stacks !important
 ** Lifecycle events
+Each LAYER has 5 events
+Each event has associated CHEF receipes ( you can have multiple )
+Events happen on layer INSTANCE
+All events except [Configure] run on a single instance
+
 *** Setup: once the instance boots up, initial installation of package
-*** Configure [events]: events are executed when:
+This event takes out instance out of service - ie. it's not ONLINE
+*** Configure: run on ALL INSTANCES in the STACK at the same time
 - instance goes online
 - OR offline
-- OR attach/detach ELB
-- OR associate/disassociate EIP of the instance
-Configure runs on ALL instances at the same time ( except for the newly attached one ?)
+- OR attach/detach ELB to a LAYER
+- OR associate/disassociate EIP with an instance
+Configure runs on ALL instances at the same time !important
 *** Deploy: for manual deployment of new app
 *** Undeploy: remove the app from the set of application servers
 *** Shutdown: shut down instance BEFORE its terminated ( ex: deregister from some service, cleanup )
