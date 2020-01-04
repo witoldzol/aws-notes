@@ -748,6 +748,10 @@ Digest files store hash details about cloud traces - if any traces are deleted, 
 aws cloudtrail describe-trails
 aws cloudtrail validate-logs --trail-arn <arn> --start-time 20190101T19:00:00Z
 #+END_SRC
+** encryption
+When saved to S3 -> they are by DEFAULT encrypted using SSE-S3 (AES-256)
+You can change encryption to SSE-KMS
+** logs -> you can forward your trails to CloudWatch Logs
 * CloudWatch
 Provides monitoring for EVERY service in AWS
 Metric is a VARIABLE to monitor ( cpu utilization etc)
@@ -1348,9 +1352,8 @@ docker push <name>
 //pull
 docker pull <name>
 
-* ECS ( docker )
+* ECS 
 Elastic Container Service
-Private ( amazons ) repo for docker images
 ** Docker Contaners Mangement systems
 1) ECS ( amazon )
 2) Fargate ( amazon serverless )
@@ -1375,6 +1378,67 @@ It automatically pics up 'random' ports spinned up by the docker images, and map
 If you want to run multiple containers ( of the same type ) on the same EC2 instance, YOU CANNOT SET HOST PORT MANUALLY ( set only container port )
 ** ECS service
 Runs and maintains the tasks & associated ELB's
+** Roles
+There are 2 roles:
+- Instance Role (EC2 that runs ecs image & ecs daemon : it allows EC2 to talk to ECS & ECR
+- Task Role <ecsTaskExecutionRole> 
+( attached to CONTAINER that runs on the EC2 – specify it in task definition )
+** Auto Scaling
+You can set autoscaling for Service
+There are 2 autoscaling POLICIES:
+- Target tracking ( ex: ECS Service CPU utilization )
+- Step scaling ( execute when alarm is triggered, EX: CPU is over 80% for 5 min)
+ 
+For ECS Classic ( non Fargate ) - Autoscaling policy set for ECS is NOT THE SAME
+as for ASG! Just because you set it AS for ECS service, doesn't mean it will
+actually scale in/out number of EC2 instances in your linked ASG!
+ 
+Problem: for ECS Classic Cluster you would have to manage TWO Autoscaling policies:
+- one for ECS Service
+- one for associated ASG
+ 
+Solution:
+Use Beanstalk to create ECS cluster & manage the autoscaling if you want to have
+managed EC2's
+ 
+Use Fargate - you only have to define autoscaling for service because EC2's are
+managed for you
+
+** Logging
+Set logging in Task Definition
+Docker containers know how to send logs to CW, so no need for extra daemon
+Make sure TaskDefinitionRole has permission to send logs to CW!
+EC2:
+To record logs of what is happening in the INSTANCE you will need to install CW Logs Agent
+** Metrics
+You can view per:
+- cluster name
+- cluster name & service name
+ 
+CloudWatch Insights:
+- its a paid service  & allows you to view metrics PER CONTAINER
+** Events
+You can output State Changes happening to your service
+Ex: - tasks starting / stopping etc
+Those are the same events that you can view in the Service / Events tab in aws
+console
+ 
+You can use CW Events to set up cron / event driven actions ->
+Example: target ECS cluster and create a task
+** CI/CD
+Example:
+1) Git: push code
+2) AWS CodePipeline: detect new code
+3) CodeBuild: builds new Docker image
+4) CodeBuild: push new image to ECR
+5) CodePipeline: trigger CF to create new TaskDefinition that uses new image
+6) ECS: pull new image from ECR
+ 
+You can use CodeDeploy to use Blue/Green deployment to ECS !important
+ 
+You can use 'digest' value (sha256) to identify image stored in ECR ( tags are
+not immutable, so if you keep uploading :latest, it will override previous image)
+
 * EC2 Elastic compute cloud
 NEVER PUT YOUR CREDENTIALS on EC2!!!
 Use IAM Roles to give credentials to EC2
@@ -2057,21 +2121,39 @@ You can encrypt on Client Side
 VPC endpoints are AVAILABLE ( unlike SQS )
 * Monitoring
 * OpsWorks
-** OpsWorks Stacks !important
+** Stacks
+Each stack has layers ( usually 3 )
+Each layer has instances
+Each instance can be either: 
+- 24/7
+- Timed ( runs at certain times )
+- Load ( runs when load treshhold is met )
+
+You have to predefine the number of instances in ADVANCE
+It's not as flexible as ASG
+
+** Autohealing
+Each instance runs OpsWorks agent
+If agent doesn't check in within 5 min - instance gets 
+Instance data gets deleted & instance is destroyed - new one is created 
+EBS storage gets reatached to new instance - so if you want to preseve data
+use EBS volumes 
 ** Lifecycle events
 Each LAYER has 5 events
 Each event has associated CHEF receipes ( you can have multiple )
 Events happen on layer INSTANCE
+Rebooting instance DOES NOT trigger any event
 All events except [Configure] run on a single instance
 
 *** Setup: once the instance boots up, initial installation of package
 This event takes out instance out of service - ie. it's not ONLINE
+Setup includes DEPLOY - it runs deploy recipes after setup is complete
 *** Configure: run on ALL INSTANCES in the STACK at the same time
 - instance goes online
 - OR offline
 - OR attach/detach ELB to a LAYER
 - OR associate/disassociate EIP with an instance
-Configure runs on ALL instances at the same time !important
+Configure runs on ALL instances on ALL LAYERS in the STACK !important
 *** Deploy: for manual deployment of new app
 *** Undeploy: remove the app from the set of application servers
 *** Shutdown: shut down instance BEFORE its terminated ( ex: deregister from some service, cleanup )
