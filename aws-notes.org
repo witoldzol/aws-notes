@@ -743,6 +743,7 @@ Can be run on:
 * CloudTrail
 Used for storing api calls
 Digest files store hash details about cloud traces - if any traces are deleted, you will be able to tell
+Can track S3 & Lambda API calls ( off by default )
 ** api
 #+BEGIN_SRC bash
 aws cloudtrail describe-trails
@@ -758,6 +759,11 @@ Add permissions to the S3 bucket that will allow cloudtrail/account resource to 
 Metric is a VARIABLE to monitor ( cpu utilization etc)
 Metrics belong to namespaces
 You can create custom metric from CW Logs -> you can build alarm best on that metric
+** Dashboard
+CAN BE MULTIREGION ( eg. you can be in Ohia & watch NetworkIn metric from Ireland region)
+You can place widgets / graphs that you want to track
+Allows you to COMBINE graphs into one -> in order to CORRELATE data
+EG: USD paid a month per number of instances 
 ** Data retention
 CloudWatch will DROP metrics after some time, depending on granularity
 > 60s -> 3 hours
@@ -883,6 +889,9 @@ Example: Create AMI using CLI
 - gets picked up by CloudTrail
 - gets picked up by CW Events because of integration
 - triggers event
+** Events for S3 - Object Level Operations
+If you want to tarck specific objects in S3 you have to:
+- enable CloudTrail for ALL or specific S3 bucket
 * CodeBuild
 Fully managed build service
 Continuous scaling ( no build queue,build server to manage etc ...  unlike Jenkins )
@@ -2449,7 +2458,7 @@ JSON based policies:
 ** Networking
 S3 supports VPC Endpoints ( for instances in VPC without www internet )
 ** Notifications
-THESE HAVE NOTHING TO DO WITH CLOUDWATCH EVENTS
+Only BUCKET level events are tracked ( not object level - for these you have to enable CloudTrail )
 You can enable in bucket notifications to:
 - SQS
 - SNS
@@ -2628,6 +2637,7 @@ Define which account can access the role
 Use STS ( Security Token Service ) to get creds and access role ( ASSUMEROLE API )
 Temp creds can be  valid between 15 min up to 1 h
 * SSM
+** general info
 Simple Systems Manager
 You can manage windows & linux instances
 You have to run system manager agent on each instance
@@ -2652,6 +2662,27 @@ There are two tiers:
 Standard tier: up to 1000 on-prem servers OR VM’s / per ACCOUNT per REGION
 Advanced tier: no limit
 You cannot use SESSION MANAGER with on-prem IF  you don’t have ADVANCED TIER
+** resource groups
+Group by TAG or CF stack
+** documents
+You can create your own or use AWS premade ones
+
+Types:
+- Command
+Run command on instances ( select manually, by tags, resource group )
+Ex: run shell command, or update amazon-ssm-agent
+You can controll RATE of running command ( eg. 1 at a time or 20% at a time of all instances)
+- Automation
+** parameter store
+You can keep strings / secure strings with KMS encryption
+Changes to params are automatically versioned ( keeps ref to WHO changed them as well )
+** CLI examples
+aws ssm get-parameters-by-path --path /my-app/dev --profile my-prof --with-decryption
+
+//there are no params under /my-app but we can look recursively to get all underlying params
+aws ssm get-parameters-by-path --path /my-app/ --profile my-prof --with-decryption --recursive 
+
+aws ssm get-parameters --names /my-app/dev/db-password  /my-app/dev/db-url --profile my-prof --with-decryption
 
 * Testing
 CI -> Development -> Unit test / Static code analysis
