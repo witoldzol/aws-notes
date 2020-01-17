@@ -206,6 +206,51 @@ T2 instances ARE NOT SUPPORTED ( no free tier )
 It has job queue ( sqs? )
 It has compute environment ( ec2 instances )
 You cannot delete compute envi before deleting job queue
+* Blue / Green across different services
+** ASG
+*** Launch configuration
+You can only have ONE attached to ASG at the time
+You CANNOT MODIFY launch config -> you have to create a new one &
+attach
+If you update launch config, only NEW instances will be affected by it
+Scaling in by DEFAULT TERMINATION POLICY is to remove instances with
+OLDEST launch configs ( unless AZ's are unbalanced -> then instance
+with newer LC could be removed first )
+ 
+*** Blue / Green with ASG:
+1) update launch config
+2) DOUBLE the size of the instances
+3) once the new instances are created ( using new LC ) change ASG size
+   to previous state
+4) by default, ASG will terminate instances with old LC
+ 
+Alternatively you can put old instances into STANDBY, & if there is a
+problem you can easily rollback
+Once you are sure all is good, you can terminate instances in standby
+ 
+** Blue Green with Beanstalk
+You can deploy to new version of app to new environment
+Once all is ready swap the environment URLs (Swap Environment Action)
+This option uses Route 53 to update DNS routing
+ 
+** OpsWorks
+Clone a whole stack & update DNS
+ 
+** Data
+Decouple database schema changes from application code
+Schema changes (ADD) ->
+Start app deployment ->
+Finish app deployment ->
+Schema changes (REMOVE)
+ 
+** When NOT to use blue / green
+1) When schema changes are too complex to decouple from the app code
+2) When your app has to be deployment 'aware' -> if you have feature
+   flags etc, that you enable before / during  deployment
+   The whole idea of green/blue is to run the same code on both
+   environments
+3) When you are using off-the-shelf software that has it own update
+   process
 * CLI
 ** S3
 *** copy to s3
@@ -1892,6 +1937,9 @@ Log in to IDENTITY
 Switch to PRODUCTION using signed link
 * Inspector
 Looks for security vulnerabilities
+Inspector CANNOT run instances for you
+You can set up CW Event rule to target Inspect & run assessment template
+You can get SNS notifications when state changes(eg:inpection starts/ends - but not via CW Events - yet)
 ** Network assessment
 Doesn't require agent to be installed on an instance
 ** Host assessment
@@ -2026,6 +2074,10 @@ Client induced error
 Application/Server side errors
 ** If unable to connect to application..
 Check security groups!
+* Macie
+Data visibility security service
+Available only in 2 regions at the moment ( us east & west )
+Macie analyses S3 buckets & searches for keys and other sensitive information
 * Messaging
 Syncronous
 Asyncronous
@@ -2648,6 +2700,15 @@ Have integration with 'Service Now'
 Boosts: compliance & governance
 Helps users that don't have deep AWS knowledge
 
+* Service Health
+Global AWS Service Health Dashboard - you can sub to individual RSS feeds for each service / region
+
+-- Personal Health Dashboard 
+you can set up notifications using CW Events 
+Example: IAM Access Key gets uploaded to GitHub ->
+AWS Health detects the key & generates AWS_RISK_CREDENTIALS_EXPOSED CW event -> 
+run lambda to delete the key etc…
+
 * Serverless
 We don't manage the server
 - Lambda
@@ -2716,6 +2777,19 @@ Define role in IAM for another account to access
 Define which account can access the role
 Use STS ( Security Token Service ) to get creds and access role ( ASSUMEROLE API )
 Temp creds can be  valid between 15 min up to 1 h
+** Data protection !important
+These 2 categories relate to very sensitive data, and warrent very strong encryption:
+ 
+PHI = protected health information
+PII = personally-identifying information
+** Network protection
+Direct Connect: private, direct connection between site & AWS
+VPN ( via public internet ) – you can use IPsec to encrypt traffic between your site & AWS via public internet
+ 
+Network ACL : stateless firewall at VPC level ( stateless = if you allow traffic IN, that doesn’t mean that it is allowed OUT – you have to be explicity about BOTH directions)
+WAF (Web Application Firewall) : web security rules against expoloits ( eg. sql injections )
+Security Groups: statefull firewall on the instances ( statefull = if you allow traffic IN, it will be allowed by default to go OUT )
+System Firewalls: install your own firewall on EC2 inctance ( popular with windows instances )
 * SSM
 ** general info
 Simple Systems Manager
@@ -2788,6 +2862,48 @@ CI -> Development -> Unit test / Static code analysis
 CI -> Build -> Integration tests / Regression tests
 CD -> Staging -> Load tests / Performance tests
 CD -> Production -> A/B tests / Canary analysis
+* Tags
+** Cost allocation tags
+They let you to ‘slice & dice’ the cost by tags ( eg. by environment, resource type etc)
+ 
+There are 2 types:
+AWS generated:
+Automatically generated & applied to the resources
+Prefix aws: (eg. aws: createdBy)
+ 
+User tags:
+Prefix user:
+ 
+Cost allocation tags appear in Billing Console
+Takes up to 24h before they show up in report
+* Trusted Advisor
+It's a GLOBAL service ( you have to be in N.Virginia region to use it=> CW Events)
+You can integrate CW Alarms with service limit tracker ->
+ 
+Business and Enterprise support customers can view Trusted Advisor metrics in CW Metrics! These would provide SERVICE LIMIT value / graph
+On top of that metric you could set an CW ALARM
+ 
+** Refreshing Advisor
+Refreshes once every 24h automatically
+You can refresh in console every 5 min
+You can use API to refresh:
+
+** CLI 
+$> aws support refresh-trusted-advisor-check
+$> describe-trusted-advisor-check-result
+ 
+Automation example:
+CW Events on cron every 1h
+-> trigger lambda that runs CLI: aws support refresh-trusted-advisor-check
+-> asw support describe-trusted-advisor-check-result
+
+** Insights
+Cost optimization (eg. You have unused load balancer )
+Performance ( ? )
+Security (eg. Your service key has been exposed )
+Fault tolerance (eg. You didn’t take snapshots of your ESB’s in a long time )
+Service Limits ( eg: your ASG is at 80% size )
+
 * VPC
 Virtual Private Cloud
 Tied to a region
@@ -2877,3 +2993,9 @@ Each application must have IAM right to write to X-RAY
 **** X-Ray on Lambda
 - enable IAM permission for Lambda ( AWSX-RayWriteOnlyAccess )
 - ensure X-Ray is imported in code
+
+* Summary - Config / Inspector / SSM / Service Catalog
+Config - > great for AUDIT & COMPLIANCE -> you can automate remediation on top of it
+Inspector -> good for scanning from inside / outside of instance. YOU HAVE TO HAVE INSTANCE RUNNING & have installed agent on instance
+Systems Manager -> automation, patching, commands, inventory at scale
+Service Catalog -> restrict how the resources are provisioned / configured
