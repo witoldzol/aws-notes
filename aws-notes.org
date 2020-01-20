@@ -143,7 +143,7 @@ Can be integrated with Gateway for authentication
 Provides DIRECT access from CLIENT side ( no proxies, no nothing, straight through )
 
 *** Sync ( App Sync replaced it? )
-* ASG Auto Scaling Groups
+* ASG
 Auto Scaling Groups
 Can scale based on CloudWatch alarms
 IAM roles attached to ASG are PASSED on to EC2 instances
@@ -166,6 +166,15 @@ Aws autoscaling complete-lifecycle-action
 --lifecycle-action-result CONTINUE
 --instance-id <instance_id>
 --region eu-east-1
+
+Example: Can you run custom script on EC2 startup? !important
+Yes - use EC2 RUN COMMAND (using SSM)
+- Create ASG Hook
+- Create SSM document ( thats where the script is & completion action for hooks )
+- Create Lambda that will run SSM document ( EC2 will have to have SSM agent installed )
+
+ASG -> Creates EC2 -> Create-Wait Hook -> CW Events -> Lambda -> SSM document -> custom script on EC2 -> Create-Proceed Hook in the end of script
+
 ** Metrics
 CPU
 Network
@@ -199,6 +208,50 @@ You can use launch template to:
 - create Spot Fleet ( a bunch of spot instances - it attempts to meet desired
 number of instances while remaining within budget )
  
+** Scaling policies
+*** Default cooldown
+how long will ASG wait until new scale in/out can be triggered
+Ex: ASG creates a new instance, cooldown is 300s. No new instances can be added/removed for next 5 min
+*** Warm up period
+for how long will the new instance be ignored by metric tracking system
+Ex: we track avg Network In metric for scaling in / out. If over 100 add new instance
+Once we create new instance,( warm up period = 60s ) for 60s we will NOT take new instance's
+Network In metric into account
+Make sure this value IS NOT bigger than COOLDOWN value
+
+*** Don't scale in
+You can prevent scaling policy from scaling in based on its tracked metrick
+Ex: policy tracks AVG CPU. Scales out if over 50%. 
+But you want to scale IN based on network IN metric, so you forbit this policy from scaling in
+*** Simple scaling policy
+You can have multiple simple scaling policies
+You can use ANY CW ALARM as basis for those policies ( yuo have to create CW Alarm in advance )
+*** Step scaling policy
+You can add intervals / if statements to your policy
+Ex: if CPU over 50% -> add 1 instance
+if CPU over 70% -> add 2 instances
+
+** Suspending processess
+- AlarmNotifications
+- Launch 
+- Terminate ( spot instances will still be terminated when they are 'due' )
+- AZRebalance
+- HealthCheck ( will not mark instances as unhealthy - WILL terminated unhealthy instances - if you set them manually )
+- AddToLoadBalancer ( if new instance is created & not added to ELB, you will have to add it manually )
+- ScheduledActions
+** Troubleshooting
+You can 
+- DETACH instance ( remove from target group -> it will get replaced immediately by ASG )
+- SUSPEND instance ( it will remain in target group -> will not get any traffic from ELB & will not be replaced )
+- INSTANCE PROTECTION from scale in -> ASG cannot terminate that instance
+** Termination policies
+Default:
+- pick an AZ that has the most instances && at least one unprotected instance
+- pick instance that has the oldest launch configuration / template ( if there are BOTH, config gets killed before templates )
+- pick one that is closest to billing hour
+- pick one at RANDOM
+
+
 * Batch
 Uses ECS to run jobs ( busybox by default )
 T2 instances ARE NOT SUPPORTED ( no free tier )
