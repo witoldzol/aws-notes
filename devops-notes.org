@@ -1,4 +1,4 @@
-*ECS
+* ECS
 
 There are 2 types of IAM roles: 
 - ECS instance roles ( EC2 )
@@ -21,3 +21,28 @@ Instance logs can be obtained only if we install CW Agent on them
 
 CI/CD:
 CodeDeploy can be used to deploy to ECS
+
+* OpsWorks
+Stack has 'layers'
+
+Layers have EC2's 
+We have to declare number of instances UPFRONT
+
+There are 2 types of EC2's: 
+- 24/7 ( run at specific time / schedule )
+- load ( run if target load is reached eg: 40% cpu reached )
+
+Because Instances have to declared upfront, Opsworks is not like ASG, its not fully dynamic
+
+Lifecycles:
+- Setup
+- Configure
+- Deploy
+- UnDeploy
+- Destroy
+
+Every time:
+- EC2 comes online / is destroyed
+- ELB is attached
+->>>> Configure stage will run on ALL INSTANCES in ALL LAYERS, and configure CHEF script will be ran
+Eg. You start new instance & it will be registered with the rest of your app / cluster
