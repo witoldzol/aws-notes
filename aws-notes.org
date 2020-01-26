@@ -251,7 +251,6 @@ Default:
 - pick one that is closest to billing hour
 - pick one at RANDOM
 
-
 * Batch
 Uses ECS to run jobs ( busybox by default )
 T2 instances ARE NOT SUPPORTED ( no free tier )

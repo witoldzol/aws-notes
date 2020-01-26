@@ -1,0 +1,23 @@
+*ECS
+
+There are 2 types of IAM roles: 
+- ECS instance roles ( EC2 )
+- Task roles
+
+ECS provisions EC2's using ASG
+
+Autoscaling in ECS is very tricky: 
+how do you connect metrics from tasks & tie them to ASG that is running EC2's hosting tasks?
+One solution is to use Beanstalk to run ECS Cluster for us and handle autoscaling
+Other: use Fargate to manage/provision EC2's
+
+Metrics:
+You can have cluster & service level metrics 
+'task insights' provides metrics on individual tasks ( NEW & paid service )
+
+Logs:
+No need for CW Agent to send logs from tasks 
+Instance logs can be obtained only if we install CW Agent on them
+
+CI/CD:
+CodeDeploy can be used to deploy to ECS
