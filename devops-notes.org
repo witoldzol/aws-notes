@@ -46,3 +46,23 @@ Every time:
 - ELB is attached
 ->>>> Configure stage will run on ALL INSTANCES in ALL LAYERS, and configure CHEF script will be ran
 Eg. You start new instance & it will be registered with the rest of your app / cluster
+
+
+* ASG 
+
+** ASG + SQS
+*** Use case: You want to scale a number of EC2's based on a number of items in a queue
+Solution:
+- create a custom metric that measures avg items per EC2
+- create a target tracking policy
+- alarms based on that target tracking policy will invoke scaling policy
+
+Acceptable backlog Example:
+We have 1500 items in queue, 10 EC2's, avg. processing time is 0.1s, max
+acceptable latency is 10s
+10/0.1s => 100 max backlog per instance
+Since backlog is @ 150 ( 1500/10) =-> we need to scale up by 5 instances
+*** How do we protect intance from being terminated while its processing item from queue?
+Solution:
+when instance picks up item from SQS, run a custom script from EC2
+that will run CLI & enable 'instance protection' until job is done
