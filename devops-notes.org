@@ -1,3 +1,53 @@
+* CloudWatch
+** Logs
+*** Types of logs
+- access
+- system
+- aplication
+
+AWS Manged logs:
+1) S3 => S3
+2) ELB => S3
+3) CloudFront => S3
+4) Route 53 => CW
+5) CloudTrail => CW & S3
+6) VPC logs => CW & S3
+
+*** Export logs to S3
+Problem: how can we export logs to S3?
+
+Solutions:
+- lambda
+Create CW Event on cron that will trigger lambda that will use CLI to send logs
+to S3
+
+- subscription filter
+Its used to STREAM logs from CW Logs to other services:
+1) Kinesis Streams
+2) Kinesis Firehose
+3) Lambda -> can send to any other service (eg: AWS ElasticSearch)
+ 
+So you can use subscription to stream logs to Firehose & it will load it to S3
+(NEAR real time) or use Lambda or Kinesis Streams to load it real time
+ 
+** Events
+*** S3 events vs CW Events
+S3 allows you to get notifications on BUCKET level operations
+S3 events can be sent to:
+1) SNS
+2) SQS
+3) Lambda
+ 
+If you want to get logs / react on OBJECT level operations:
+- enable CloudTrail for target S3 bucket
+- use AWS API CALL via CloudTrail & act on api's made on the objects in target bucket
+
+** Dashboard
+Allows you to display CROSS ACCOUNT widgets / graphs
+You can CORRELATE graphs (eg: show EC2 usage by Billing )
+** API Call via CloudTrail
+Available for ALL services ( because they all use api calls to get things done)
+You cannot use it for READ calls ( GET, LIST, DESCRIBE ) - which makes sense
 * ECS
 
 There are 2 types of IAM roles: 
@@ -47,9 +97,11 @@ Every time:
 ->>>> Configure stage will run on ALL INSTANCES in ALL LAYERS, and configure CHEF script will be ran
 Eg. You start new instance & it will be registered with the rest of your app / cluster
 
-
 * ASG 
-
+** Logs
+There is no integration between CW Logs & ASG
+There is a direct integration with SNS but you can achieve more if you just use
+CW Events
 ** ASG + SQS
 *** Use case: You want to scale a number of EC2's based on a number of items in a queue
 Solution:
@@ -66,3 +118,92 @@ Since backlog is @ 150 ( 1500/10) =-> we need to scale up by 5 instances
 Solution:
 when instance picks up item from SQS, run a custom script from EC2
 that will run CLI & enable 'instance protection' until job is done
+** CloudFormation Creation Policy
+Problem: how do we know that the launched instances are ok?
+ 
+Solution: use cfn-signal & ASG Creation Policty ( you set how many signals you
+expect to receive )
+ 
+/opt/aws/bin/cfn-signal -e $? --stack <stack-name> --resource AutoScalingGroup
+--region <region>
+** CloudFormation Update Policy
+Applicable to : ASG, Lambda-Alias, ElastiCache-ReplicationGroup
+ 
+Problem: you update the  Launch Configuration & run Update on ASG. The LC got
+updated but running EC2 Instances did not. How to updated the running EC2's?
+ 
+Solution:
+You can define 3 attributes:
+ 
+- AutoScalingRollingUpdate
+Define min active instance & max batch size of instances that will be replaced
+at one time
+ 
+- AutoScalingReplacingUpdate
+Creates a whole new ASG group with brand new instances. Think 'immutable'
+deployment
+Terminates old instances in old ASG group, removes old group.
+ 
+- AutoScalingScheduledAction
+** CodeDeploy
+You can use CodeDeploy to deploy code on to the EC2's inside the ASG
+Install CodeDeploy Agent on the EC2's ( use User Script )
+CD can do InPlace or Blue/Green deployments to ASG
+*** Scale out during deployment
+Problem: CD is deploying new version on the instances & ASG scales out during that time
+New instance will have OLD version of the code compared to the rest of the instances
+
+Solutions:
+- redeploy
+- use Suspend Process: Launch to stop new instances from being created during deployment
+In common_functions.sh set 
+#+BEGIN_SRC 
+HANDLE_PROCS=true // works only with OneAtATime deployment !
+#+END_SRC
+
+*** Deployment Strategies for ASG
+**** In Place
+One LoadBalancer, one Target Group, one ASG
+Use the same EC2's to deploy new code on - risky!
+**** Rolling
+1 LB, 1 TG, ! ASG
+Create new EC2's to deploy new code, terminate old ones, you have v1 & v2 coexist
+**** Replace
+1 LB, 1 TG, 2 ASG
+Create new ASG with new TG & new EC2's. Once done, terminate old ASG
+**** Blue/Green
+1 Route53, 2 LB, 2 TG, 2 ASG
+Create whole new stack & use Route53 to shift traffic. REMEMBER TO PREHEAT the LB!!
+* DynamoDB
+You can enable autoscaling of Write & Read Capacity Units ( for both main table & GSI )
+You can have On Demand capacity -- its much more expensive! (good for unpredictible workloads)
+** LocalSecondaryIndex 
+PARTITION KEY IS THE SAME AS Original Partition key
+Has to be defined at the table creation 
+Inherits WCU & RCU of the main table 
+** GlobalSecondaryIndex 
+PARTITION KEY has to be DIFFERENT from original partition key
+GSI can be created at any time 
+They have SEPARATE WCU&RCU than main table
+** DAX
+Caching cluster that sits in front of Dynamo & automatically caches hot items
+YOU HAVE TO CREATE IT AT THE SAME TIME YOU CONFIGURE DYNAMO !Important
+** Global tables ( replication )
+2 Conditions to enable: 
+-Streams have to be ON && 
+-Table has to be EMPTY
+You can replicate data using GT -> in different AZ
+Data flows BOTH WAYS: if I make changes in eu-west it will go to us-west and vice versa.
+** Streams
+You can stream all the updates in DB 
+Example: use Lambda to read the stream 
+Kinesis Streams is underpinning the Dynamo Streams !important
+
+Use case: I want to use 3 lambdas to process the stream but Im being throttled
+Solution: Don't use more than 2 readers per shard. Use one lambda to pass through data to SNS & 
+have other readers work of SNS
+** TTL (Time to live)
+You can create argument ( column ) that will store a date.
+When date/time is reached, whole row will be deleted.
+TTL integrates with Global Tables -> row will be deleted in ALL tables across AZ's automatically
+
