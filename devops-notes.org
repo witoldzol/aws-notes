@@ -1,102 +1,3 @@
-* CloudWatch
-** Logs
-*** Types of logs
-- access
-- system
-- aplication
-
-AWS Manged logs:
-1) S3 => S3
-2) ELB => S3
-3) CloudFront => S3
-4) Route 53 => CW
-5) CloudTrail => CW & S3
-6) VPC logs => CW & S3
-
-*** Export logs to S3
-Problem: how can we export logs to S3?
-
-Solutions:
-- lambda
-Create CW Event on cron that will trigger lambda that will use CLI to send logs
-to S3
-
-- subscription filter
-Its used to STREAM logs from CW Logs to other services:
-1) Kinesis Streams
-2) Kinesis Firehose
-3) Lambda -> can send to any other service (eg: AWS ElasticSearch)
- 
-So you can use subscription to stream logs to Firehose & it will load it to S3
-(NEAR real time) or use Lambda or Kinesis Streams to load it real time
- 
-** Events
-*** S3 events vs CW Events
-S3 allows you to get notifications on BUCKET level operations
-S3 events can be sent to:
-1) SNS
-2) SQS
-3) Lambda
- 
-If you want to get logs / react on OBJECT level operations:
-- enable CloudTrail for target S3 bucket
-- use AWS API CALL via CloudTrail & act on api's made on the objects in target bucket
-
-** Dashboard
-Allows you to display CROSS ACCOUNT widgets / graphs
-You can CORRELATE graphs (eg: show EC2 usage by Billing )
-** API Call via CloudTrail
-Available for ALL services ( because they all use api calls to get things done)
-You cannot use it for READ calls ( GET, LIST, DESCRIBE ) - which makes sense
-* ECS
-
-There are 2 types of IAM roles: 
-- ECS instance roles ( EC2 )
-- Task roles
-
-ECS provisions EC2's using ASG
-
-Autoscaling in ECS is very tricky: 
-how do you connect metrics from tasks & tie them to ASG that is running EC2's hosting tasks?
-One solution is to use Beanstalk to run ECS Cluster for us and handle autoscaling
-Other: use Fargate to manage/provision EC2's
-
-Metrics:
-You can have cluster & service level metrics 
-'task insights' provides metrics on individual tasks ( NEW & paid service )
-
-Logs:
-No need for CW Agent to send logs from tasks 
-Instance logs can be obtained only if we install CW Agent on them
-
-CI/CD:
-CodeDeploy can be used to deploy to ECS
-
-* OpsWorks
-Stack has 'layers'
-
-Layers have EC2's 
-We have to declare number of instances UPFRONT
-
-There are 2 types of EC2's: 
-- 24/7 ( run at specific time / schedule )
-- load ( run if target load is reached eg: 40% cpu reached )
-
-Because Instances have to declared upfront, Opsworks is not like ASG, its not fully dynamic
-
-Lifecycles:
-- Setup
-- Configure
-- Deploy
-- UnDeploy
-- Destroy
-
-Every time:
-- EC2 comes online / is destroyed
-- ELB is attached
-->>>> Configure stage will run on ALL INSTANCES in ALL LAYERS, and configure CHEF script will be ran
-Eg. You start new instance & it will be registered with the rest of your app / cluster
-
 * ASG 
 ** Logs
 There is no integration between CW Logs & ASG
@@ -174,7 +75,69 @@ Create new ASG with new TG & new EC2's. Once done, terminate old ASG
 **** Blue/Green
 1 Route53, 2 LB, 2 TG, 2 ASG
 Create whole new stack & use Route53 to shift traffic. REMEMBER TO PREHEAT the LB!!
+
+** Launch Templates
+You can specify a MIX of:
+- on demand & spot instances
+- different SIZE instances 
+You can set size / SG as params before creating  ASG
+It's far more flexible compared with Launch Configurations
+It can be VERSIONED (LC's are immutable & have to be replaced on change)
+* CloudWatch
+** Logs
+*** Types of logs
+- access
+- system
+- aplication
+
+AWS Manged logs:
+1) S3 => S3
+2) ELB => S3
+3) CloudFront => S3
+4) Route 53 => CW
+5) CloudTrail => CW & S3
+6) VPC logs => CW & S3
+
+*** Export logs to S3
+Problem: how can we export logs to S3?
+
+Solutions:
+- lambda
+Create CW Event on cron that will trigger lambda that will use CLI to send logs
+to S3
+
+- subscription filter
+Its used to STREAM logs from CW Logs to other services:
+1) Kinesis Streams
+2) Kinesis Firehose
+3) Lambda -> can send to any other service (eg: AWS ElasticSearch)
+ 
+So you can use subscription to stream logs to Firehose & it will load it to S3
+(NEAR real time) or use Lambda or Kinesis Streams to load it real time
+ 
+** Events
+*** S3 events vs CW Events
+S3 allows you to get notifications on BUCKET level operations
+S3 events can be sent to:
+1) SNS
+2) SQS
+3) Lambda
+ 
+If you want to get logs / react on OBJECT level operations:
+- enable CloudTrail for target S3 bucket
+- use AWS API CALL via CloudTrail & act on api's made on the objects in target bucket
+
+** Dashboard
+Allows you to display CROSS ACCOUNT widgets / graphs
+You can CORRELATE graphs (eg: show EC2 usage by Billing )
+** API Call via CloudTrail
+Available for ALL services ( because they all use api calls to get things done)
+You cannot use it for READ calls ( GET, LIST, DESCRIBE ) - which makes sense
 * DynamoDB
+Row -> Item
+Row has -> Attributes
+Attribute is -> Name:Value pair
+
 You can enable autoscaling of Write & Read Capacity Units ( for both main table & GSI )
 You can have On Demand capacity -- its much more expensive! (good for unpredictible workloads)
 ** LocalSecondaryIndex 
@@ -207,3 +170,165 @@ You can create argument ( column ) that will store a date.
 When date/time is reached, whole row will be deleted.
 TTL integrates with Global Tables -> row will be deleted in ALL tables across AZ's automatically
 
+** Common Patterns you can build
+*** S3 Metadata Index 
+1) Save items to S3
+2) Use Lambda to save metadata to Dynamo ( object created time, by who, size, attributes etc )
+3) Create API on top of DynamoDB to query for Metadata ( total space used, query for items by date, list of object with given attributes)
+*** ES API
+1) Create API to retreive items from DynamoDB
+2) Stream updates from Dynamo
+3) Use lambda to read stream & pass data to ElasticSearch
+4) Build API to SEARCH for items using ES
+
+* Inspector
+Analyses EC2 for vulnerabilities
+2 types: network & ...instance scan
+You have to have Instector Agent installed for instance scan (from within)
+* ECS
+
+There are 2 types of IAM roles: 
+- ECS instance roles ( EC2 )
+- Task roles
+
+ECS provisions EC2's using ASG
+
+Autoscaling in ECS is very tricky: 
+how do you connect metrics from tasks & tie them to ASG that is running EC2's hosting tasks?
+One solution is to use Beanstalk to run ECS Cluster for us and handle autoscaling
+Other: use Fargate to manage/provision EC2's
+
+Metrics:
+You can have cluster & service level metrics 
+'task insights' provides metrics on individual tasks ( NEW & paid service )
+
+Logs:
+No need for CW Agent to send logs from tasks 
+Instance logs can be obtained only if we install CW Agent on them
+
+CI/CD:
+CodeDeploy can be used to deploy to ECS
+
+* OpsWorks
+Stack has 'layers'
+
+Layers have EC2's 
+We have to declare number of instances UPFRONT
+
+There are 2 types of EC2's: 
+- 24/7 ( run at specific time / schedule )
+- load ( run if target load is reached eg: 40% cpu reached )
+
+Because Instances have to declared upfront, Opsworks is not like ASG, its not fully dynamic
+
+Lifecycles:
+- Setup
+- Configure
+- Deploy
+- UnDeploy
+- Destroy
+
+Every time:
+- EC2 comes online / is destroyed
+- ELB is attached
+->>>> Configure stage will run on ALL INSTANCES in ALL LAYERS, and configure CHEF script will be ran
+Eg. You start new instance & it will be registered with the rest of your app / cluster
+
+* Macie
+Analyses S3 buckets for keys, passwords etc
+Available only in 2 regions so far 
+* Multi AZ
+You have to enable manually multi AZ in those services:
+- EFS ( elastic file system )
+- ELB
+- ASG
+- BeansTalk
+- RDS & ElastiCache ( same region synchronous failover )
+- Aurora ( DATA IS STORED multi AZ, but the master DB is a single AZ)
+   -> you can enable a multi AZ Failover just like for RDS
+- ElasticSearch ( managed ) but you still have to define multimaster setting
+- Jenkins -> have have to have multimaster if you want to go multi AZ
+
+Multi AZ is implicitly enabled for:
+- S3 data stored multi AZ ( except for OneZone-Infrequent Access bucket )
+- DynamoDB
+- rest of AWS Managed Srves
+
+UseCase: how can we enable MultiAZ for EBS?
+Solution: 
+- Create ASG in MultiAZ. Set Min/Max/Desired = 1
+- Use ASG lifecycle hook on 'Terminate' -> create snapshot of EBS
+- Use ASG hook 'Create' -> create EBS from snapshot & attach to New Instance in diff AZ zone
+Note: if you are using PIOPS (provisioned IOPS--io1) -> !important
+Pre-warm (get best performance )the EBS !important
+by having the EC2 read the entire volume once !important
+
+* Multi Region
+** Overview
+- DynamoDB Global Tables
+- AWS Config Aggregators ( multi-region && multi-account )
+- RDS Cross Region Read replicas ( reads only / DR )
+- Aurora Global Database ( ONE ! read replica / DR )
+- Snapshots: EBS/RDS/AMI -> can be saved to diff region
+- VPC Peering: to allow traffic between different regions
+- Route53: uses global network of DNS servers
+- S3: Cross region replication
+- CloudFront: Global CDN @Edge locations
+- Lambda@Edge: global lambda function @Edge locations
+
+UseCase: how to enable multi region for classic application?
+Soluton: use Route53 & helthChecks
+- Two app stacks ( ELB/ASG ) in two regions
+- One Route53 to direct traffic by geolocation/latency
+- if HealthCheck fails on one region, Route53 will direct traffic away from that region
+
+HealthChecks:
+- based on endpoints (app,server)
+- CALCULATED healthchecks ( healthcheck of healthchecks )
+- based on CW Alarms: create alarms based on metrics you want to track, and then have healthCheck to track those alarms)  !important
+
+HealthChecks are integrated with CW Metricks:
+there is a metrick of HC's & you can create alarm on top of it
+-> send notification to SNS -> lambda -> Slack
+** Stack Sets (multi region)
+MULTI REGION
+MULTI ACCOUNT
+You can create/delete/update stacks using one template across multi region/account 
+You have to set 'trust relationship' between:
+- administrator account &
+- target accounts
+** CodePipeline - CodeDeploy (multi region)
+You can create single pipeline that will pull source code from 'source' bucket &
+deploy it to multiple regions.
+You have to make sure IAM permissions are set, each region will have it's own
+bucket & CodeDeploy orchestrated by the main pipeline
+
+* S3
+** Access
+Each bucket has Bucket Policy where you can grant access to other services 
+Access can be give also by IAM policies.
+Final access => Union of Bucket Policy + IAM policy => Denie wins over Allow
+** Replication
+You can replicate whole bucket:
+ ( or by prefix/tag )
+- to another bucket
+- in the SAME or DIFFERENT region
+- in the same or different account 
+Replication is async
+** Life policy
+You can expire or transfer objects after specified time
+Eg: move to Glacier after 100 days, delete after 300 days from creation
+You can enable for all by prefix/tag
+
+DAta stored in glacier is automatically encrypted !important
+** Server Access Logging
+You can move object access logs to another bucket
+You can add prefix
+
+* Trusted Advisor 
+Gives insights on utilization, cost savings, vulnerabilities.
+Has free tier.
+You can manually refresh every 5 min.
+Use cli to activate scan & 'describe' results to build automations
+Integrates with CW Events
+Can detect exposed aws credentials
