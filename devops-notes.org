@@ -263,6 +263,25 @@ Note: if you are using PIOPS (provisioned IOPS--io1) -> !important
 Pre-warm (get best performance )the EBS !important
 by having the EC2 read the entire volume once !important
 
+* Multi Account
+Global service
+Master account -> has many Member Accounts
+Member account can belong to ONLY one Organisation
+You get consolidated Billing for all accounts
+You get AGGREGATE USAGE/ALLOWANCES for multi account -> lower costs
+Allows automated account creation via CLI
+** Organizations
+- Organize accounts into Organizational Units (OU)
+- You can nest OU inside OU
+- You can apply Service Control Policy to OU:
+Permit/Deny services inside of given OU
+It's a filter on IAM
+
+Use cases:
+1) Create sandbox environment
+2) Separate dev & prod into 2 different accounts
+3) Allow only approved services
+
 * Multi Region
 ** Overview
 - DynamoDB Global Tables
@@ -303,6 +322,31 @@ deploy it to multiple regions.
 You have to make sure IAM permissions are set, each region will have it's own
 bucket & CodeDeploy orchestrated by the main pipeline
 
+** Disaster Recovery
+RPO - Recovery Point Objective
+How much of a data loss are we willing to accept in case of a disaster
+Example: we make backup every 1h => max data loss = 1h
+PTO - Recovery Time Objective
+Hoq long it takes to RECOVER from disaster => amount of DOWNTIME
+*** Recovery strategies
+1) Backup & restore
+High RTO & RPO -> make regular backups to cloud && restore all on disaster
+2) Pilot light
+Keep the backup of CRITICAL part of app running in Cloud 
+Example: Replicating data to Backup RDS running in other region. If disaster happens
+-use Route53 to redirect traffic
+-recreate reminder of non critical app structure - eg: EC2's )
+3) Warm standby ( low RTO )
+Full app backup BUT at MINIMAL size ( to manage cost )
+On disaster:
+- use Route53 to redirect traffic to backup app
+- SCALE UP backup app to production level
+4) Hot Site / Multi Site ( very low RTO - very expensive )
+Full production size backup app ( on site & in cloud )
+5) AWS Multi Region (same as 4)
+2 Full size apps ( both in cloud ) with failover 
+
+RTO DECREASES(gets faster) / Cost increases 1=>4
 * S3
 ** Access
 Each bucket has Bucket Policy where you can grant access to other services 
@@ -332,3 +376,16 @@ You can manually refresh every 5 min.
 Use cli to activate scan & 'describe' results to build automations
 Integrates with CW Events
 Can detect exposed aws credentials
+* OnPremise 
+- Download AWS Linux AMI as a VirtualMachine & run on VM on prem software
+Example: download Linux2 as .iso & run on VirtualBox 
+- VM Import / Export
+Migrate existing app to EC2 or back to on-prem
+- Application Discovery Service
+Use for on-prem migrations 
+Gather info about on-prem servers & plan migration
+- Database Migration Service
+Replicate on-prem=>AWS, AWS=>AWS, AWS=>on-prem
+Works with different DB's
+- Server Migration Service
+INCREMENTAL migration from on-prem live servers to AWS
