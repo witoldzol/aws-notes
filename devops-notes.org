@@ -1,4 +1,4 @@
-* ASG 
+* ASG
 ** Logs
 There is no integration between CW Logs & ASG
 There is a direct integration with SNS but you can achieve more if you just use
@@ -21,30 +21,30 @@ when instance picks up item from SQS, run a custom script from EC2
 that will run CLI & enable 'instance protection' until job is done
 ** CloudFormation Creation Policy
 Problem: how do we know that the launched instances are ok?
- 
+
 Solution: use cfn-signal & ASG Creation Policty ( you set how many signals you
 expect to receive )
- 
+
 /opt/aws/bin/cfn-signal -e $? --stack <stack-name> --resource AutoScalingGroup
 --region <region>
 ** CloudFormation Update Policy
 Applicable to : ASG, Lambda-Alias, ElastiCache-ReplicationGroup
- 
+
 Problem: you update the  Launch Configuration & run Update on ASG. The LC got
 updated but running EC2 Instances did not. How to updated the running EC2's?
- 
+
 Solution:
 You can define 3 attributes:
- 
+
 - AutoScalingRollingUpdate
 Define min active instance & max batch size of instances that will be replaced
 at one time
- 
+
 - AutoScalingReplacingUpdate
 Creates a whole new ASG group with brand new instances. Think 'immutable'
 deployment
 Terminates old instances in old ASG group, removes old group.
- 
+
 - AutoScalingScheduledAction
 ** CodeDeploy
 You can use CodeDeploy to deploy code on to the EC2's inside the ASG
@@ -57,8 +57,8 @@ New instance will have OLD version of the code compared to the rest of the insta
 Solutions:
 - redeploy
 - use Suspend Process: Launch to stop new instances from being created during deployment
-In common_functions.sh set 
-#+BEGIN_SRC 
+In common_functions.sh set
+#+BEGIN_SRC
 HANDLE_PROCS=true // works only with OneAtATime deployment !
 #+END_SRC
 
@@ -79,7 +79,7 @@ Create whole new stack & use Route53 to shift traffic. REMEMBER TO PREHEAT the L
 ** Launch Templates
 You can specify a MIX of:
 - on demand & spot instances
-- different SIZE instances 
+- different SIZE instances
 You can set size / SG as params before creating  ASG
 It's far more flexible compared with Launch Configurations
 It can be VERSIONED (LC's are immutable & have to be replaced on change)
@@ -111,10 +111,10 @@ Its used to STREAM logs from CW Logs to other services:
 1) Kinesis Streams
 2) Kinesis Firehose
 3) Lambda -> can send to any other service (eg: AWS ElasticSearch)
- 
+
 So you can use subscription to stream logs to Firehose & it will load it to S3
 (NEAR real time) or use Lambda or Kinesis Streams to load it real time
- 
+
 ** Events
 *** S3 events vs CW Events
 S3 allows you to get notifications on BUCKET level operations
@@ -122,7 +122,7 @@ S3 events can be sent to:
 1) SNS
 2) SQS
 3) Lambda
- 
+
 If you want to get logs / react on OBJECT level operations:
 - enable CloudTrail for target S3 bucket
 - use AWS API CALL via CloudTrail & act on api's made on the objects in target bucket
@@ -140,30 +140,30 @@ Attribute is -> Name:Value pair
 
 You can enable autoscaling of Write & Read Capacity Units ( for both main table & GSI )
 You can have On Demand capacity -- its much more expensive! (good for unpredictible workloads)
-** LocalSecondaryIndex 
+** LocalSecondaryIndex
 PARTITION KEY IS THE SAME AS Original Partition key
-Has to be defined at the table creation 
-Inherits WCU & RCU of the main table 
-** GlobalSecondaryIndex 
+Has to be defined at the table creation
+Inherits WCU & RCU of the main table
+** GlobalSecondaryIndex
 PARTITION KEY has to be DIFFERENT from original partition key
-GSI can be created at any time 
+GSI can be created at any time
 They have SEPARATE WCU&RCU than main table
 ** DAX
 Caching cluster that sits in front of Dynamo & automatically caches hot items
 YOU HAVE TO CREATE IT AT THE SAME TIME YOU CONFIGURE DYNAMO !Important
 ** Global tables ( replication )
-2 Conditions to enable: 
--Streams have to be ON && 
+2 Conditions to enable:
+-Streams have to be ON &&
 -Table has to be EMPTY
 You can replicate data using GT -> in different AZ
 Data flows BOTH WAYS: if I make changes in eu-west it will go to us-west and vice versa.
 ** Streams
-You can stream all the updates in DB 
-Example: use Lambda to read the stream 
+You can stream all the updates in DB
+Example: use Lambda to read the stream
 Kinesis Streams is underpinning the Dynamo Streams !important
 
 Use case: I want to use 3 lambdas to process the stream but Im being throttled
-Solution: Don't use more than 2 readers per shard. Use one lambda to pass through data to SNS & 
+Solution: Don't use more than 2 readers per shard. Use one lambda to pass through data to SNS &
 have other readers work of SNS
 ** TTL (Time to live)
 You can create argument ( column ) that will store a date.
@@ -171,7 +171,7 @@ When date/time is reached, whole row will be deleted.
 TTL integrates with Global Tables -> row will be deleted in ALL tables across AZ's automatically
 
 ** Common Patterns you can build
-*** S3 Metadata Index 
+*** S3 Metadata Index
 1) Save items to S3
 2) Use Lambda to save metadata to Dynamo ( object created time, by who, size, attributes etc )
 3) Create API on top of DynamoDB to query for Metadata ( total space used, query for items by date, list of object with given attributes)
@@ -187,23 +187,23 @@ Analyses EC2 for vulnerabilities
 You have to have Instector Agent installed for instance scan (from within)
 * ECS
 
-There are 2 types of IAM roles: 
+There are 2 types of IAM roles:
 - ECS instance roles ( EC2 )
 - Task roles
 
 ECS provisions EC2's using ASG
 
-Autoscaling in ECS is very tricky: 
+Autoscaling in ECS is very tricky:
 how do you connect metrics from tasks & tie them to ASG that is running EC2's hosting tasks?
 One solution is to use Beanstalk to run ECS Cluster for us and handle autoscaling
 Other: use Fargate to manage/provision EC2's
 
 Metrics:
-You can have cluster & service level metrics 
+You can have cluster & service level metrics
 'task insights' provides metrics on individual tasks ( NEW & paid service )
 
 Logs:
-No need for CW Agent to send logs from tasks 
+No need for CW Agent to send logs from tasks
 Instance logs can be obtained only if we install CW Agent on them
 
 CI/CD:
@@ -212,10 +212,10 @@ CodeDeploy can be used to deploy to ECS
 * OpsWorks
 Stack has 'layers'
 
-Layers have EC2's 
+Layers have EC2's
 We have to declare number of instances UPFRONT
 
-There are 2 types of EC2's: 
+There are 2 types of EC2's:
 - 24/7 ( run at specific time / schedule )
 - load ( run if target load is reached eg: 40% cpu reached )
 
@@ -236,7 +236,7 @@ Eg. You start new instance & it will be registered with the rest of your app / c
 
 * Macie
 Analyses S3 buckets for keys, passwords etc
-Available only in 2 regions so far 
+Available only in 2 regions so far
 * Multi AZ
 You have to enable manually multi AZ in those services:
 - EFS ( elastic file system )
@@ -255,7 +255,7 @@ Multi AZ is implicitly enabled for:
 - rest of AWS Managed Srves
 
 UseCase: how can we enable MultiAZ for EBS?
-Solution: 
+Solution:
 - Create ASG in MultiAZ. Set Min/Max/Desired = 1
 - Use ASG lifecycle hook on 'Terminate' -> create snapshot of EBS
 - Use ASG hook 'Create' -> create EBS from snapshot & attach to New Instance in diff AZ zone
@@ -312,7 +312,7 @@ there is a metrick of HC's & you can create alarm on top of it
 ** Stack Sets (multi region)
 MULTI REGION
 MULTI ACCOUNT
-You can create/delete/update stacks using one template across multi region/account 
+You can create/delete/update stacks using one template across multi region/account
 You have to set 'trust relationship' between:
 - administrator account &
 - target accounts
@@ -332,7 +332,7 @@ Hoq long it takes to RECOVER from disaster => amount of DOWNTIME
 1) Backup & restore
 High RTO & RPO -> make regular backups to cloud && restore all on disaster
 2) Pilot light
-Keep the backup of CRITICAL part of app running in Cloud 
+Keep the backup of CRITICAL part of app running in Cloud
 Example: Replicating data to Backup RDS running in other region. If disaster happens
 -use Route53 to redirect traffic
 -recreate reminder of non critical app structure - eg: EC2's )
@@ -344,12 +344,12 @@ On disaster:
 4) Hot Site / Multi Site ( very low RTO - very expensive )
 Full production size backup app ( on site & in cloud )
 5) AWS Multi Region (same as 4)
-2 Full size apps ( both in cloud ) with failover 
+2 Full size apps ( both in cloud ) with failover
 
 RTO DECREASES(gets faster) / Cost increases 1=>4
 * S3
 ** Access
-Each bucket has Bucket Policy where you can grant access to other services 
+Each bucket has Bucket Policy where you can grant access to other services
 Access can be give also by IAM policies.
 Final access => Union of Bucket Policy + IAM policy => Denie wins over Allow
 ** Replication
@@ -357,7 +357,7 @@ You can replicate whole bucket:
  ( or by prefix/tag )
 - to another bucket
 - in the SAME or DIFFERENT region
-- in the same or different account 
+- in the same or different account
 Replication is async
 ** Life policy
 You can expire or transfer objects after specified time
@@ -369,23 +369,167 @@ DAta stored in glacier is automatically encrypted !important
 You can move object access logs to another bucket
 You can add prefix
 
-* Trusted Advisor 
+* Trusted Advisor
 Gives insights on utilization, cost savings, vulnerabilities.
 Has free tier.
 You can manually refresh every 5 min.
 Use cli to activate scan & 'describe' results to build automations
 Integrates with CW Events
 Can detect exposed aws credentials
-* OnPremise 
+* OnPremise
 - Download AWS Linux AMI as a VirtualMachine & run on VM on prem software
-Example: download Linux2 as .iso & run on VirtualBox 
+Example: download Linux2 as .iso & run on VirtualBox
 - VM Import / Export
 Migrate existing app to EC2 or back to on-prem
 - Application Discovery Service
-Use for on-prem migrations 
+Use for on-prem migrations
 Gather info about on-prem servers & plan migration
 - Database Migration Service
 Replicate on-prem=>AWS, AWS=>AWS, AWS=>on-prem
 Works with different DB's
 - Server Migration Service
 INCREMENTAL migration from on-prem live servers to AWS
+
+* TODAY =============
+
+* SNS
+- encryption in transit is enabled by default,
+you can enable encryption at rest using
+: Customer master key (CMK)
+
+* CW Logs
+- you create Metric Filter on LOG GROUP
+- you can stream LOG STREAM ( inside log group )
+
+* CW Alarms
+- alarm can trigger:
+: ASG action ( select asg group & action )
+: ECS action ( select cluster )
+: EC2 action ( if alarm is on top of EC2 per-instance metric )
+: SNS topic
+
+* ASG
+- launch configurations cannot be edited!
+
+* CLOUDFROMATION
+** Deployments
+: Puppet -> good for long lifecycle apps that will require updates / patches
+: OpsWorks -> CF can create OW specific resources.
+Example:
+- AWS::OpsWorks::Stack
+- AWS::OpsWorks::Instance
+: ElasticBeanstalk
+-> good for short lifecycles, where we throw away environment with each deployment
+-> doesn't allow as much configuration as OpsWorks do
+
+** Wait Condition
+- you can hit signed url to send POST message with the SUCCESS / FAILURE signal
+
+- best practice
+: if creating EC2, use Creation Policy instead of cfn-signal / Wait Condition
+: use wait condition to wait for EXTERNAL resources, example: On-Prem instances
+- DependsOn & Wait Condition
+: use it to make the timeout clock start running only after resource is created
+Example: wait on EC2, wait condition timeout is 100s,
+clock will start only once EC2 is created ( but still getting ready )
+
+*** Wait Condition Example
+#+BEGIN_SRC bash
+  MyWaitCondition
+    Type: 'AWS::CloudFormation::WaitCondition'
+    DependsOn: 'MyInstance' (we are breaking best practice, use CreationPolicy instead)
+    Properties:
+      Handle: !Ref MyWaitHandle
+      Timeout: 300
+      Count: 1
+
+  MyWaitHandle:
+    Type: 'AWS::CloudFormation::WaitConditionHandle'
+#+END_SRC
+*** cfn-signal, wait condition example
+#+BEGIN_SRC bash
+  #...0 is result, -r result msg
+  '/opt/aws/bin/cfn-signal -e 0 -r \"Instance creation complete\" ",
+  {
+    !Ref: "MyWaitHandle"
+  }
+#+END_SRC
+*** cfn-signal, creation policy example
+#+BEGIN_SRC bash
+  #...
+  UserData: !Base64
+	  'Fn::Sub': |
+	    #!/bin/bash
+	    export PATH=~/.local/bin:$PATH
+	    apt-get update
+	    apt install python-pip
+	    pip install https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
+	    # $? === send signal based on exit status of the last executed command
+	    /usr/local/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource myec2instance --region ${AWS::Region}
+
+#+END_SRC
+
+** Creation Policy
+- will stop resource from going into COMPLETE status until all signals are received
+- use CLI or helper scripts to send signals back to CF
+- you can nest Creation Policy inside of Wait Condition
+- best practice
+: use with EC2's & ASG's
+
+*** creation policy example
+#+BEGIN_SRC bash
+  MyWebServer:
+    Type: 'AWS::AutoScaling::AutoScalingGroup'
+    Properties:
+      AvailabilityZones: !GetAZs ""
+      LaunchConfigurationName: !Ref: 'MyLaunchConfig'
+      MinSize: 3
+      MaxSize: 4
+      LoadBalancerNames:
+	- !Ref 'MyLoadBalancer'
+    CreationPolicy:
+      ResourceSignal:
+	Timeout: 'PT15M'
+	Count: 3 # default is 1, so its an optional arg
+#+END_SRC
+*** cfn-signal
+#+BEGIN_SRC bash
+/opt/aws/bin/cfn-signal -e $?
+  --stack Ref: 'MyStack'
+  --resource MyWebServer
+  --region Ref: 'AWS::Region'
+#+END_SRC
+** Helper Scripts
+: cfn-init
+- Required params: [--stack, --resource]
+- reads Metadata of resource
+- helps install software
+- use instead of User Data
+
+: cfn-signal
+- Required params: [--stack, --resource]
+- use to signal that resource is ready
+
+: cfn-hup
+- runs daemon that detects changes in metadata
+- configure stack & region for daemon in a file : /etc/cfn/cfn-hup.conf
+- set actions in hooks file : /etc/cfn/hooks.d/cfn-auto-reloader.conf
+Example: have a cfn-init to set up instance & install software using metadata.
+When metadata changes, run cfn-hup hook to rerun cfn-init script ( which will run updated metadata )
+: cfn-get-metadata
+- gets metadata for given stack / resource ( and outputs it )
+
+** Stack Policy
+- by default all updates on all resources are allowed
+- the moment you create a stack policy, all resources become protected
+- you can have only one stack policy attached to a stack, BUT one policy can have multiple STATEMENTS
+- you can use overriding stack policy to update protected resource ( temporary policy, set via cli / console )
+
+*** example policy
+#+BEGIN_SRC bash
+  Statement:
+    Effect: 'Allow'
+    Action: 'Update:*'
+    Principal: '*'
+    Resource: '*'
+#+END_SRC
